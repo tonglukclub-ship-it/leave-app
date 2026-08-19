@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบลางานออนไลน์</title>
+  
+  <!-- ระบบ PWA ติดตั้งลงหน้าจอ -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0d6efd">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3209/3209074.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="https://cdn-icons-png.flaticon.com/512/3209/3209074.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="https://cdn-icons-png.flaticon.com/512/3209/3209074.png">
+  <link rel="shortcut icon" href="https://cdn-icons-png.flaticon.com/512/3209/3209074.png">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body { 
+      font-family: 'Sarabun', sans-serif; 
+      background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80'); 
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+      padding-bottom: 30px; 
+      min-height: 100vh;
+    }
+
+    .hidden { display: none !important; }
+    
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+    }
+
+    .glass-nav {
+      background: rgba(255, 255, 255, 0.9) !important;
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+    }
+
+    #loginScreen { background: rgba(0, 0, 0, 0.3); }
+
+    #loginScreen .card { 
+      background-color: rgba(255, 255, 255, 0.95); 
+      backdrop-filter: blur(10px); 
+      border-radius: 20px;
+    }
+    
+    .calendar-grid { 
+      display: grid; 
+      grid-template-columns: repeat(7, 1fr); 
+      gap: 6px; 
+      padding: 15px; 
+    }
+
+    .calendar-day { 
+      background: rgba(255, 255, 255, 0.95); 
+      border: 1px solid rgba(0,0,0,0.05); 
+      border-radius: 8px; 
+      min-height: 90px; 
+      padding: 6px; 
+      cursor: pointer; 
+      position: relative; 
+      display: flex; 
+      flex-direction: column; 
+      justify-content: flex-start; 
+      transition: all 0.2s ease-in-out;
+    }
+    .calendar-day:hover {
+      background-color: #ffffff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .calendar-day.today { 
+      border: 2px solid #0d6efd; 
+      background-color: #f1f8ff; 
+    }
+    .day-number { font-weight: 700; color: #333; font-size: 0.95rem; margin-bottom: 4px; }
+    
+    .status-bar { margin-top: auto; font-size: 0.7rem; padding: 3px 0; text-align: center; border-radius: 5px; font-weight: bold; color: white; }
+    .bg-green { background-color: #198754; } 
+    .bg-red { background-color: #dc3545; }
+    
+    .user-dots { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 2px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,0.2);}
+    .x-mark { font-size: 11px; width: 11px; height: 11px; display: flex; align-items: center; justify-content: center; font-weight: bold;}
+    
+    .c-red { background-color: #dc3545; color: #dc3545; }
+    .c-orange { background-color: #fd7e14; color: #fd7e14; }
+    .c-purple { background-color: #6f42c1; color: #6f42c1; }
+    .c-blue { background-color: #0d6efd; color: #0d6efd; }
+    .c-yellow { background-color: #ffc107; color: #ffc107; }
+    .c-gray { background-color: #6c757d; color: #6c757d; }
+    .c-lightgreen { background-color: #90EE90; color: #90EE90; }
+    .c-skyblue { background-color: #0dcaf0; color: #0dcaf0; }
+
+    .bg-orange { background-color: #fd7e14; color: white; }
+    .bg-purple { background-color: #6f42c1; color: white; }
+    .bg-lightgreen { background-color: #90EE90; color: #000; }
+    
+    .text-shadow-light { text-shadow: 0 1px 2px rgba(255,255,255,0.8); }
+
+    @media (max-width: 576px) {
+      .container { padding-left: 5px; padding-right: 5px; margin-top: 10px !important; }
+      .glass-card { padding: 10px !important; }
+      
+      .calendar-grid { gap: 3px; padding: 5px; }
+      .calendar-day { min-height: 65px; padding: 3px 2px; border-radius: 6px; }
+      
+      .day-number { font-size: 0.85rem; margin-bottom: 2px; }
+      
+      .user-dots { gap: 2px; justify-content: center; }
+      .dot { width: 6px; height: 6px; }
+      .x-mark { font-size: 8px; width: 8px; height: 8px; }
+      
+      .status-bar { font-size: 0.6rem; padding: 1px 0; border-radius: 3px; letter-spacing: -0.5px; }
+      
+      .text-shadow-light { font-size: 0.8rem; }
+      
+      #welcomeText { 
+        font-size: 0.85rem !important; 
+        max-width: 200px; 
+        white-space: nowrap; 
+        overflow: hidden; 
+        text-overflow: ellipsis; 
+      }
+      #roleText { font-size: 0.65rem !important; }
+    }
+  </style>
+
+  <!-- PWA Manifest & Service Worker -->
+  <script>
+    const pwaManifest = {
+      "name": "ระบบลางานออนไลน์",
+      "short_name": "ลางานออนไลน์",
+      "display": "standalone",
+      "background_color": "#ffffff",
+      "theme_color": "#0d6efd",
+      "icons": [
+        {
+          "src": "https://cdn-icons-png.flaticon.com/512/3209/3209074.png",
+          "sizes": "512x512",
+          "type": "image/png"
+        }
+      ]
+    };
+
+    const stringManifest = JSON.stringify(pwaManifest);
+    const blobManifest = new Blob([stringManifest], { type: 'application/json' });
+    const manifestURL = URL.createObjectURL(blobManifest);
+    const manifestLink = document.createElement('link');
+    manifestLink.rel = 'manifest';
+    manifestLink.href = manifestURL;
+    document.head.appendChild(manifestLink);
+    
+    if ('serviceWorker' in navigator) {
+      const swCode = "self.addEventListener('fetch', function(event) {});";
+      const swBlob = new Blob([swCode], { type: 'application/javascript' });
+      const swUrl = URL.createObjectURL(swBlob);
+      navigator.serviceWorker.register(swUrl).then(() => {
+          console.log('Service Worker Registered for PWA installability');
+      }).catch(err => console.log('SW Registration failed: ', err));
+    }
+  </script>
+
+  <!-- Firebase สำหรับแจ้งเตือนแบบ Realtime -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body>
+
+  <div id="adminStatusBar" class="fixed-bottom p-2 text-center text-white small hidden" style="z-index: 2000; font-weight: bold; cursor: pointer;" onclick="filterPending()"></div>
+
+  <div id="loadingScreen" class="d-flex align-items-center justify-content-center bg-white" style="height: 100vh; position: fixed; width: 100%; z-index: 9999;">
+    <div class="text-center">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p class="mt-2 text-muted small fw-bold">กำลังโหลดข้อมูล...</p>
+    </div>
+  </div>
+
+  <div id="loginScreen" class="d-flex align-items-center justify-content-center hidden" style="height: 100vh;">
+    <div class="card shadow-lg border-0" style="width: 350px;">
+      <div class="card-body p-4">
+        <div class="text-center mb-3">
+          <img src="https://img2.pic.in.th/Gemini_Generated_Image_5ilchn5ilchn5ilc-Photoroom.png" style="width: 180px; max-width: 100%; filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.15));" alt="Logo">
+        </div>
+        <h4 class="text-center mb-4 fw-bold text-primary">ระบบลางานออนไลน์</h4>
+        <form onsubmit="handleLogin(event)">
+          <div class="input-group mb-3 shadow-sm">
+            <span class="input-group-text bg-white border-end-0"><i class="fas fa-user text-muted"></i></span>
+            <input type="text" id="username" class="form-control border-start-0" placeholder="ไอดีผู้ใช้งาน" required>
+          </div>
+          <div class="input-group mb-4 shadow-sm">
+            <span class="input-group-text bg-white border-end-0"><i class="fas fa-lock text-muted"></i></span>
+            <input type="password" id="password" class="form-control border-start-0" placeholder="รหัสผ่าน" required>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 rounded-pill fw-bold py-2 shadow">เข้าสู่ระบบ</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="appScreen" class="container-fluid hidden p-0">
+    <div class="glass-nav py-2 px-3 shadow-sm d-flex justify-content-between align-items-center sticky-top" style="min-height: 55px;">
+      <div class="d-flex align-items-center gap-2">
+        <div style="line-height: 1.2;">
+          <div class="fw-bold text-primary" id="welcomeText" style="font-size: 0.95rem;">...</div>
+          <small class="text-muted fw-bold" id="roleText" style="font-size: 0.75rem;"></small>
+        </div>
+        <button id="btnSpecialQuotaReq" class="btn btn-warning btn-sm rounded-circle shadow-sm ms-2 hidden" onclick="requestSpecialQuotaUI()" style="width:32px; height:32px; padding:0;" title="ขอโควต้าพิเศษกรณีแผนกเต็ม"><i class="fas fa-star text-white"></i></button>
+        <button class="btn btn-outline-primary btn-sm rounded-circle ms-1" onclick="showMyStats()" style="width:32px; height:32px; padding:0;" title="ดูสถิติ"><i class="fas fa-chart-pie"></i></button>
+        <button class="btn btn-outline-secondary btn-sm rounded-circle" onclick="openChangePasswordModal()" style="width:32px; height:32px; padding:0;" title="เปลี่ยนรหัสผ่าน"><i class="fas fa-key"></i></button>
+      </div>
+      <button class="btn btn-danger rounded-circle shadow-sm d-flex justify-content-center align-items-center" style="width: 38px; height: 38px; padding: 0;" onclick="logout()"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+
+    <div id="adminPanel" class="bg-warning p-2 text-center shadow-sm" style="display: none; opacity: 0.95;">
+      <div class="d-flex justify-content-center align-items-center gap-2 flex-wrap">
+        <span class="fw-bold small text-dark"><i class="fas fa-lock"></i> โควตา:</span>
+        <div class="input-group input-group-sm" style="width: 220px;">
+          <span class="input-group-text bg-white fw-bold">M</span>
+          <input type="number" id="quotaM" class="form-control text-center fw-bold text-primary">
+          <span class="input-group-text bg-white fw-bold">Q</span>
+          <input type="number" id="quotaQ" class="form-control text-center fw-bold text-success">
+          <span class="input-group-text bg-white fw-bold">T</span>
+          <input type="number" id="quotaT" class="form-control text-center fw-bold text-danger">
+        </div>
+        <button class="btn btn-dark btn-sm fw-bold" onclick="saveQuota()">บันทึก</button>
+        <div id="batchGenZone" style="display:inline-block;">
+           <div style="border-left:1px solid #000; height:20px; display:inline-block; margin:0 5px; vertical-align:middle;"></div>
+           <button class="btn btn-primary btn-sm fw-bold" onclick="runAutoHoliday()"><i class="fas fa-calendar-plus"></i> จัดการวันหยุด</button>
+        </div>
+        <button class="btn btn-dark btn-sm ms-2 fw-bold" onclick="openUserManageModal()"><i class="fas fa-users-cog"></i> จัดการสมาชิก</button>
+        <button class="btn btn-info btn-sm ms-2 text-white fw-bold shadow-sm" onclick="openLeaderboardModal()"><i class="fas fa-trophy"></i> จัดอันดับ</button>
+        <button id="btnAdminSQ" class="btn btn-light btn-sm ms-2 fw-bold text-warning shadow-sm border" onclick="openManageSpecialQuota()"><i class="fas fa-star"></i> อนุมัติพิเศษ</button>
+      </div>
+    </div>
+
+    <div class="container mt-4 mb-4" style="max-width: 850px;">
+      <div class="glass-card p-3 p-md-4">
+          <div class="d-flex justify-content-between align-items-center mb-3 px-2">
+            <button class="btn btn-light shadow-sm rounded-circle" style="width:40px; height:40px;" onclick="changeMonth(-1)"><i class="fas fa-chevron-left text-primary"></i></button>
+            <h4 id="monthDisplay" class="m-0 fw-bold text-dark text-shadow-light"></h4>
+            <button class="btn btn-light shadow-sm rounded-circle" style="width:40px; height:40px;" onclick="changeMonth(1)"><i class="fas fa-chevron-right text-primary"></i></button>
+          </div>
+          
+          <div class="d-flex text-center small mb-2 fw-bold text-dark text-shadow-light" style="font-size:0.9rem;">
+            <div style="flex:1; color: #dc3545;">อา</div><div style="flex:1; color: #ffc107;">จ</div><div style="flex:1; color: #e83e8c;">อ</div><div style="flex:1; color: #28a745;">พ</div><div style="flex:1; color: #fd7e14;">พฤ</div><div style="flex:1; color: #007bff;">ศ</div><div style="flex:1; color: #6f42c1;">ส</div>
+          </div>
+          
+          <div id="calendar" class="calendar-grid bg-transparent shadow-none p-0"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="leaveModal" data-bs-focus="false">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-primary text-white border-0">
+          <h5 class="modal-title fw-bold" id="modalTitle"><i class="fas fa-calendar-plus me-2"></i> ขอลาหยุด</h5>
+          <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body bg-light">
+          <form onsubmit="submitLeaveForm(event)">
+            <input type="hidden" id="editId">
+            <label class="form-label fw-bold text-secondary">วันที่ต้องการลา</label>
+            <input type="date" id="leaveDate" class="form-control mb-3 shadow-sm border-0" required>
+            
+            <div id="endDateDiv" class="hidden">
+              <label class="form-label fw-bold text-secondary mt-2">ถึงวันที่ (เฉพาะลาป่วยต่อเนื่อง)</label>
+              <input type="date" id="leaveEndDate" class="form-control mb-3 shadow-sm border-0">
+            </div>
+            
+            <div id="swapDateDiv" class="hidden">
+              <label class="form-label fw-bold text-secondary mt-2">สลับจากวันหยุดเดิมวันที่</label>
+              <input type="date" id="swapOriginalDate" class="form-control mb-3 shadow-sm border-0 border-primary bg-light">
+            </div>
+            
+            <label class="form-label fw-bold text-secondary">ประเภทการลา</label>
+            <select id="leaveType" class="form-select mb-3 shadow-sm border-0" required>
+              <optgroup label="--- นับโควตา ---" style="background:#e9ecef;">
+                <option value="พักร้อน">พักร้อน</option>
+                <option value="ลากิจ">ลากิจ</option>
+                <option value="หยุด นข.">หยุด นข.</option>
+                <option value="สลับวันหยุด">สลับวันหยุด</option>
+                <option value="ขาดงาน">ขาดงาน</option>
+                <option value="อื่นๆ">อื่นๆ</option>
+              </optgroup>
+              <optgroup label="--- ไม่นับโควตา ---" style="background:#e9ecef;">
+                <option value="ลาป่วย">ลาป่วย</option>
+                <option value="วันหยุดพิเศษ">วันหยุดพิเศษ</option>
+                <option value="ขอรับรองเวลา">ขอรับรองเวลา</option>
+                <option value="ทำงานนอกสถานที่">ทำงานนอกสถานที่</option>
+                <option value="กิจครึ่งวัน (เช้า)">กิจครึ่งวัน (เช้า)</option>
+                <option value="กิจครึ่งวัน (บ่าย)">กิจครึ่งวัน (บ่าย)</option>
+              </optgroup>
+            </select>
+            
+            <label class="form-label fw-bold text-secondary">หมายเหตุ / เหตุผล</label>
+            <input type="text" id="leaveNote" class="form-control mb-3 shadow-sm border-0" placeholder="ระบุเหตุผล (ถ้ามี)">
+            
+            <label class="form-label fw-bold text-secondary">แนบรูปภาพ <small class="text-danger fw-normal">(ไม่เกิน 3MB)</small></label>
+            <input type="file" id="leaveFile" class="form-control mb-4 shadow-sm border-0" accept="image/*">
+            
+            <button type="submit" class="btn btn-success w-100 py-2 fw-bold shadow" id="btnSubmit"><i class="fas fa-save me-1"></i> บันทึกข้อมูล</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-white border-bottom-0 pb-0">
+          <h5 class="modal-title fw-bold text-primary" id="detailDateText">...</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0">
+          <div id="detailSummary" class="p-3 bg-white text-center small"></div>
+          <ul class="list-group list-group-flush" id="detailList"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="statsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-info text-white border-0">
+          <h5 class="modal-title fw-bold"><i class="fas fa-chart-bar me-2"></i> สถิติการลาของฉัน</h5>
+          <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body bg-light p-3">
+          <div class="alert alert-secondary text-center small mb-3 border-0 shadow-sm">
+            รอบปี: <strong id="statsPeriod" class="text-primary">...</strong><br>(26 ธ.ค. - 25 ธ.ค.)
+          </div>
+          <ul class="list-group shadow-sm rounded" id="statsList">
+            <li class="list-group-item text-center text-muted">กำลังโหลดข้อมูล...</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="changePassModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header bg-secondary text-white border-0">
+          <h5 class="modal-title fw-bold"><i class="fas fa-key me-2"></i> เปลี่ยนรหัสผ่าน</h5>
+          <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body bg-light">
+          <form onsubmit="submitChangePassword(event)">
+            <label class="form-label fw-bold text-muted small">รหัสผ่านเดิม</label>
+            <input type="password" id="oldPass" class="form-control mb-3 border-0 shadow-sm" required>
+            <label class="form-label fw-bold text-muted small">รหัสผ่านใหม่</label>
+            <input type="password" id="newPass" class="form-control mb-3 border-0 shadow-sm" required minlength="4">
+            <label class="form-label fw-bold text-muted small">ยืนยันรหัสผ่านใหม่</label>
+            <input type="password" id="confirmPass" class="form-control mb-4 border-0 shadow-sm" required minlength="4">
+            <button type="submit" class="btn btn-dark w-100 py-2 fw-bold shadow-sm" id="btnChangePass">บันทึกรหัสผ่านใหม่</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="userManageModal">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-dark text-white border-0">
+          <h5 class="modal-title fw-bold"><i class="fas fa-users-cog me-2"></i> จัดการสมาชิก</h5>
+          <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body bg-light">
+          <div class="d-flex justify-content-end mb-3">
+            <button class="btn btn-success btn-sm fw-bold shadow-sm" onclick="openAddUserForm()"><i class="fas fa-user-plus me-1"></i> เพิ่มสมาชิกใหม่</button>
+          </div>
+          <div class="table-responsive shadow-sm rounded bg-white">
+            <table class="table table-hover small text-center mb-0 align-middle">
+              <thead class="table-dark">
+                <tr><th>ID</th><th>ชื่อ-สกุล</th><th>สถานะ</th><th>แผนก</th><th>วันหยุด</th><th>จัดการ</th></tr>
+              </thead>
+              <tbody id="userListBody">
+                <tr><td colspan="6" class="py-3 text-muted">กำลังโหลด...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="leaderboardModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header text-white border-0" style="background-color: #0dcaf0;">
+          <h5 class="modal-title fw-bold"><i class="fas fa-trophy me-2 text-warning"></i> จัดอันดับคนลาหยุด</h5>
+          <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0 bg-light">
+          <div class="alert alert-light text-center small mb-0 border-bottom text-muted">
+              รอบปี: <strong id="lbPeriod" class="text-dark">...</strong><br>* ไม่รวมวันหยุดประจำสัปดาห์
+          </div>
+          <ul class="list-group list-group-flush" id="leaderboardList">
+            <li class="list-group-item text-center py-4 bg-transparent text-muted">กำลังโหลดข้อมูล...</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <script>
+    // ⚠️ นำ URL API ของ Web App ที่ได้ใหม่มาใส่ตรงนี้
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyCQHlA_rwa8PrWMpQWnttLbGQZHJdUgh01394Rm0i5fh2Zf8aEwXz6JdXLHyZTLHo3SA/exec";
+    
+    // ฟังก์ชันเชื่อมต่อกับ API หลังบ้าน
+    async function callAPI(action, payload = {}) {
+      payload.action = action;
+      try {
+        const response = await fetch(GAS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        return await response.json();
+      } catch (error) {
+        throw new Error('การเชื่อมต่อล้มเหลว: ' + error.message);
+      }
+    }
+
+    document.addEventListener('focusin', function (e) { e.stopImmediatePropagation(); }, true);
+
+    // ยังคงให้รับข้อมูล Realtime จาก Firebase เหมือนเดิม
+    const firebaseConfig = {
+      apiKey: "AIzaSyDr5gF1IlAhUe46p6wL0SPiFEeD-_Og1F8",
+      authDomain: "leavesystem-mqt.firebaseapp.com",
+      databaseURL: "https://leavesystem-mqt-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "leavesystem-mqt",
+      storageBucket: "leavesystem-mqt.firebasestorage.app",
+      messagingSenderId: "306577878528",
+      appId: "1:306577878528:web:7bb31f2a09e432be3732e5"
+    };
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    const db = firebase.database();
+
+    let currentUser = null;
+    let isSubmitting = false; 
+    let allLeaves = [];
+    let dailyLimit = { M: 0, Q: 0, T: 0 };
+    let myDept = 'M';
+    let userDeptMap = {};
+    let currentMonth = new Date();
+    let currentViewDate = null; 
+
+    window.onload = function() {
+      try {
+        const savedUser = localStorage.getItem('leaveAppUser');
+        if (savedUser) { 
+          currentUser = JSON.parse(savedUser); 
+          if(currentUser && currentUser.username) { initializeUI(currentUser); } 
+          else { showLogin(); }
+        } else { showLogin(); }
+      } catch (e) {
+        localStorage.removeItem('leaveAppUser');
+        showLogin();
+      }
+    };
+
+    function showLogin() {
+        document.getElementById('loadingScreen').classList.add('hidden');
+        document.getElementById('loginScreen').classList.remove('hidden');
+    }
+
+    function initializeUI(user) {
+      document.getElementById('loadingScreen').classList.add('hidden');
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('appScreen').classList.remove('hidden');
+      document.getElementById('welcomeText').innerText = user.name;
+      
+      let roleDisplay = 'สมาชิกทั่วไป';
+      if(user.role === 'admin') roleDisplay = 'ผู้ดูแลระบบสูงสุด';
+      if(user.role === 'assistant') roleDisplay = 'ผู้ช่วยผู้ดูแล';
+      document.getElementById('roleText').innerText = roleDisplay;
+      
+      if(user.role === 'admin' || user.role === 'assistant') {
+          document.getElementById('adminPanel').style.display = 'block';
+          document.getElementById('btnSpecialQuotaReq').classList.add('hidden'); 
+          if(user.role === 'assistant') document.getElementById('batchGenZone').style.display = 'none';
+          else document.getElementById('batchGenZone').style.display = 'inline-block';
+      } else { 
+          document.getElementById('adminPanel').style.display = 'none'; 
+          document.getElementById('btnSpecialQuotaReq').classList.remove('hidden'); 
+      }
+      loadData();
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById('username').value.trim();
+      const p = document.getElementById('password').value.trim();
+      const btn = e.target.querySelector('button'); 
+      const txt = btn.innerText; 
+      btn.disabled = true; 
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังตรวจสอบ...';
+      
+      callAPI('loginUser', { username: u, password: p }).then(res => {
+        btn.disabled = false; btn.innerText = txt;
+        if(res.status === 'success'){ 
+            currentUser = res; 
+            localStorage.setItem('leaveAppUser', JSON.stringify(res)); 
+            initializeUI(currentUser); 
+        } else { Swal.fire('ข้อมูลไม่ถูกต้อง', res.message, 'error'); }
+      }).catch(err => {
+        btn.disabled = false; btn.innerText = txt;
+        Swal.fire('ข้อผิดพลาดระบบ', err.message, 'error');
+      });
+    }
+    
+    function logout() {
+      Swal.fire({ 
+        title: 'ออกจากระบบ?', icon: 'question', showCancelButton: true, confirmButtonText: 'ใช่, ออกจากระบบ', confirmButtonColor: '#d33', cancelButtonText: 'ยกเลิก'
+      }).then(function(r) {
+        if (r.isConfirmed) { 
+            localStorage.removeItem('leaveAppUser'); 
+            currentUser = null; allLeaves = []; 
+            document.getElementById('appScreen').classList.add('hidden'); 
+            document.getElementById('adminPanel').style.display = 'none'; 
+            document.getElementById('loginScreen').classList.remove('hidden'); 
+            document.getElementById('username').value = ''; 
+            document.getElementById('password').value = ''; 
+        }
+      });
+    }
+
+    function loadData() {
+      let reqUser = currentUser ? currentUser.username : ""; 
+      callAPI('getDataForCalendar', { requestUsername: reqUser }).then(res => {
+        allLeaves = res.leaves; 
+        dailyLimit = res.limit;
+        myDept = res.requesterDept;
+        userDeptMap = res.userDeptMap;
+
+        if(currentUser && (currentUser.role === 'admin' || currentUser.role === 'assistant')) {
+           if(document.getElementById('quotaM')) document.getElementById('quotaM').value = dailyLimit.M || 0;
+           if(document.getElementById('quotaQ')) document.getElementById('quotaQ').value = dailyLimit.Q || 0;
+           if(document.getElementById('quotaT')) document.getElementById('quotaT').value = dailyLimit.T || 0;
+           
+           let sqBtn = document.getElementById('btnAdminSQ');
+           if (sqBtn) {
+               if (res.pendingSQCount > 0) {
+                   sqBtn.innerHTML = '<i class="fas fa-star"></i> อนุมัติพิเศษ <span class="badge bg-danger ms-1">' + res.pendingSQCount + '</span>';
+                   sqBtn.classList.remove('btn-light', 'text-warning');
+                   sqBtn.classList.add('btn-danger', 'text-white');
+               } else {
+                   sqBtn.innerHTML = '<i class="fas fa-star"></i> อนุมัติพิเศษ';
+                   sqBtn.classList.add('btn-light', 'text-warning');
+                   sqBtn.classList.remove('btn-danger', 'text-white');
+               }
+           }
+        }
+        renderCalendar();
+        if (currentViewDate) {
+           const modalEl = document.getElementById('detailModal');
+           if (modalEl && modalEl.classList.contains('show')) { viewDay(currentViewDate); }
+        }
+      }).catch(err => {
+        Swal.fire('ข้อผิดพลาด', 'โหลดข้อมูลปฏิทินไม่สำเร็จ: ' + err.message, 'error');
+      });
+    }
+
+    let isFirebaseInit = true;
+    db.ref('Leaves').on('value', function(snapshot) {
+        if (isFirebaseInit) { isFirebaseInit = false; return; }
+        if (isSubmitting) return; 
+        setTimeout(function() { loadData(); }, 1500);
+    });
+
+    function changeMonth(n) { currentMonth.setMonth(currentMonth.getMonth() + n); renderCalendar(); }
+
+    function renderCalendar() {
+      updateAdminBar();
+      const y = currentMonth.getFullYear(); 
+      const m = currentMonth.getMonth();
+      document.getElementById('monthDisplay').innerText = currentMonth.toLocaleDateString('th-TH', {month:'long', year:'numeric'});
+      
+      const firstDay = new Date(y, m, 1).getDay(); 
+      const daysInMonth = new Date(y, m + 1, 0).getDate(); 
+      const todayStr = new Date().toISOString().split('T')[0];
+      const cal = document.getElementById('calendar'); 
+      cal.innerHTML = '';
+      
+      for(let i=0; i<firstDay; i++) cal.innerHTML += '<div style="visibility:hidden"></div>';
+      
+      let qM = parseInt(dailyLimit.M) || 0;
+      let qQ = parseInt(dailyLimit.Q) || 0;
+      let qT = parseInt(dailyLimit.T) || 0;
+      let totalLimit = qM + qQ + qT;
+      let isAdminRole = (currentUser && (currentUser.role === 'admin' || currentUser.role === 'assistant'));
+      let myLimit = isAdminRole ? totalLimit : ((myDept === 'Q') ? qQ : ((myDept === 'T') ? qT : qM));
+      
+      const exclude = ['ลาป่วย', 'กิจครึ่งวัน (เช้า)', 'กิจครึ่งวัน (บ่าย)', 'วันหยุดพิเศษ', 'ขอรับรองเวลา', 'ทำงานนอกสถานที่'];
+
+      for(let d=1; d<=daysInMonth; d++) {
+        const dateStr = y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+        const leaves = allLeaves.filter(function(l) { return l.date === dateStr; });
+        
+        let globalCount = leaves.filter(l => !exclude.includes(l.type) && l.status !== 'Rejected' && l.status !== 'Cancelled' && l.status !== 'ไม่อนุมัติ' && l.status !== 'ยกเลิก').length;
+        
+        const count = leaves.filter(function(l) { 
+           let lDept = userDeptMap[l.username] || 'M';
+           if (isAdminRole) {
+               return !exclude.includes(l.type) && l.status !== 'Rejected' && l.status !== 'Cancelled' && l.status !== 'ไม่อนุมัติ' && l.status !== 'ยกเลิก';
+           } else {
+               return !exclude.includes(l.type) && lDept === myDept && l.status !== 'Rejected' && l.status !== 'Cancelled' && l.status !== 'ไม่อนุมัติ' && l.status !== 'ยกเลิก';
+           }
+        }).length;
+        
+        let remainingGlobal = totalLimit - globalCount;
+        let remainingDept = myLimit - count;
+        
+        let actualRemaining = isAdminRole ? remainingGlobal : Math.max(0, Math.min(remainingDept, remainingGlobal));
+        
+        let statusHtml = '';
+        if (actualRemaining <= 0) {
+            statusHtml = '<div class="status-bar bg-red shadow-sm">เต็ม</div>';
+        } else {
+            statusHtml = '<div class="status-bar bg-green shadow-sm">ว่าง ' + actualRemaining + '</div>';
+        }
+            
+        let dots = leaves.map(function(l) {
+            let c = 'c-blue';
+            if (l.type === 'ขาดงาน' || l.type === 'อื่นๆ') c = 'c-orange';
+            else if (l.type === 'วันหยุดประจำสัปดาห์') c = 'c-red';
+            else if (l.type === 'พักร้อน') c = 'c-purple';
+            else if (l.type === 'หยุด นข.' || l.type === 'ลากิจ') c = 'c-blue';
+            else if (l.type === 'ลาป่วย') c = 'c-yellow';
+            else if (l.type === 'ขอรับรองเวลา') c = 'c-gray';
+            else if (l.type === 'วันหยุดพิเศษ') c = 'c-lightgreen';
+            else if (l.type.includes('กิจครึ่งวัน')) c = 'c-skyblue';
+            return (l.status !== 'Approved') ? '<i class="fas fa-times x-mark ' + c + '" style="background:none;"></i>' : '<div class="dot ' + c + '"></div>';
+        }).join('');
+        
+        let todayClass = (dateStr === todayStr) ? 'today' : '';
+        cal.innerHTML += '<div class="calendar-day shadow-sm ' + todayClass + '" onclick="viewDay(\'' + dateStr + '\')">' +
+            '<div class="day-number">' + d + '</div>' +
+            '<div class="user-dots">' + dots + '</div>' +
+            statusHtml + '</div>';
+      }
+    }
+
+    function viewDay(dateStr) {
+      currentViewDate = dateStr;
+      const leaves = allLeaves.filter(function(l) { return l.date === dateStr; });
+      document.getElementById('detailDateText').innerText = 'รายการวันที่ ' + dateStr.split('-').reverse().join('/');
+      
+      const total = leaves.length;
+      const summary = {};
+      const exclude = ['ลาป่วย', 'กิจครึ่งวัน (เช้า)', 'กิจครึ่งวัน (บ่าย)', 'วันหยุดพิเศษ', 'ขอรับรองเวลา', 'ทำงานนอกสถานที่'];
+      let deptSummary = { M: 0, Q: 0, T: 0 };
+      
+      leaves.forEach(function(l) { 
+          if (!summary[l.type]) summary[l.type] = 0; 
+          summary[l.type]++; 
+          
+          if (!exclude.includes(l.type) && l.status !== 'Rejected' && l.status !== 'Cancelled' && l.status !== 'ไม่อนุมัติ' && l.status !== 'ยกเลิก') {
+              let d = userDeptMap[l.username] || 'M';
+              if(deptSummary[d] !== undefined) { deptSummary[d]++; }
+          }
+      });
+
+      let summaryHtml = '<div class="mb-3"><button class="btn btn-success w-100 fw-bold shadow py-2 rounded-pill" onclick="openLeaveFormWithDate(\'' + dateStr + '\')"><i class="fas fa-plus-circle fa-lg me-2"></i> กดลงทะเบียนลา</button></div>';
+
+      if (total > 0) {
+        summaryHtml += '<div class="fw-bold mb-2 text-dark">มีผู้ลาทั้งหมด: ' + total + ' ท่าน</div><div class="d-flex justify-content-center flex-wrap gap-1">';
+        for (const key in summary) {
+           summaryHtml += '<span class="badge ' + getBadgeClass(key) + ' rounded-pill shadow-sm px-2 py-1">' + key + ' ' + summary[key] + '</span>';
+        }
+        summaryHtml += '</div>';
+        
+        if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'assistant')) {
+            let qM = parseInt(dailyLimit.M) || 0;
+            let qQ = parseInt(dailyLimit.Q) || 0;
+            let qT = parseInt(dailyLimit.T) || 0;
+            let totalLimit = qM + qQ + qT;
+            let totalGlobalCount = deptSummary.M + deptSummary.Q + deptSummary.T;
+            let globalRemaining = Math.max(0, totalLimit - totalGlobalCount);
+
+            summaryHtml += '<div class="alert alert-info py-2 px-3 mt-3 mb-1 small text-start shadow-sm border-0" style="border-radius:8px;">' +
+                '<strong><i class="fas fa-chart-pie me-1"></i> สรุปการใช้โควตาวันนี้:</strong><hr class="my-1">' +
+                '<div class="d-flex justify-content-between mb-2">' +
+                '<span>แผนก M: <b>' + deptSummary.M + '/' + qM + '</b></span>' +
+                '<span>แผนก Q: <b>' + deptSummary.Q + '/' + qQ + '</b></span>' +
+                '<span>แผนก T: <b>' + deptSummary.T + '/' + qT + '</b></span>' +
+                '</div>' +
+                '<div class="text-center pt-2 border-top text-danger fw-bold">' +
+                'โควต้ารวมใช้งานไปแล้ว: ' + totalGlobalCount + '/' + totalLimit + ' (เหลือแทรกได้ ' + globalRemaining + ' ที่)' +
+                '</div></div>';
+        }
+      } else { 
+        summaryHtml += '<span class="text-muted fw-bold">-- วันนี้ว่าง (ไม่มีใครลงลา) --</span>'; 
+      }
+      document.getElementById('detailSummary').innerHTML = summaryHtml;
+
+      const list = document.getElementById('detailList'); list.innerHTML = '';
+      
+      leaves.forEach(function(l) {
+         let buttons = '';
+         const currentUsername = String(currentUser.username).trim();
+         const itemUsername = String(l.username).trim();
+         const isOwner = (currentUsername === itemUsername);
+         const isPending = (l.status !== 'Approved');
+         const isAdmin = (currentUser.role === 'admin');
+         const isAssistant = (currentUser.role === 'assistant');
+
+         if (isAdmin || isAssistant) {
+             if(isPending) buttons += '<button class="btn btn-sm btn-success me-1 shadow-sm" onclick="approveItem(\'' + l.id + '\')"><i class="fas fa-check"></i></button>';
+             buttons += '<button class="btn btn-sm btn-outline-primary me-1 shadow-sm" onclick="editItem(\'' + l.id + '\')"><i class="fas fa-edit"></i></button>';
+             buttons += '<button class="btn btn-sm btn-outline-danger shadow-sm" onclick="delLeave(\'' + l.id + '\')"><i class="fas fa-trash"></i></button>';
+         } else if (isOwner && isPending) {
+             buttons += '<button class="btn btn-sm btn-outline-primary me-1 shadow-sm" onclick="editItem(\'' + l.id + '\')"><i class="fas fa-edit"></i></button>';
+             buttons += '<button class="btn btn-sm btn-outline-danger shadow-sm" onclick="delLeave(\'' + l.id + '\')"><i class="fas fa-trash"></i></button>';
+         }
+         
+         let statusInfo = (!isPending && l.approver) ? '<div style="font-size:0.75em; color:#198754;" class="mt-1"><i class="fas fa-check-circle"></i> อนุมัติโดย: ' + l.approver + '</div>' : (isPending ? '<span class="badge bg-warning text-dark ms-2 shadow-sm rounded-pill"><i class="fas fa-clock"></i> รออนุมัติ</span>' : '');
+         
+         let imgBtn = '';
+         if (l.image === 'LOCKED') { imgBtn = '<button class="btn btn-sm btn-secondary text-white me-2 shadow-sm" style="cursor:not-allowed;" onclick="Swal.fire(\'จำกัดสิทธิ์\',\'สงวนสิทธิ์การดูรูปภาพเฉพาะเจ้าของและผู้ดูแล\',\'lock\')"><i class="fas fa-lock"></i></button>'; } 
+         else if (l.image && l.image !== "") { imgBtn = '<button class="btn btn-sm btn-info text-white me-2 shadow-sm" onclick="previewImage(\'' + l.image + '\')"><i class="fas fa-image"></i> รูปภาพ</button>'; }
+
+         let noteHtml = l.note ? '- ' + l.note : '';
+         let htmlRow = '<li class="list-group-item d-flex justify-content-between align-items-center p-3 bg-white border-bottom">' +
+                '<div><span class="fw-bold text-dark fs-6">' + l.name + '</span><span class="badge ' + getBadgeClass(l.type) + ' rounded-pill ms-1 shadow-sm" style="font-size:0.7em">' + l.type + '</span>' + (isPending ? statusInfo : '') + '<div class="small text-muted mt-1 fst-italic">' + noteHtml + '</div>' + (!isPending ? statusInfo : '') + '</div>' +
+                '<div class="d-flex align-items-center">' + imgBtn + ' ' + buttons + '</div></li>';
+         list.innerHTML += htmlRow;
+      });
+      
+      const modalEl = document.getElementById('detailModal');
+      if (!modalEl.classList.contains('show')) new bootstrap.Modal(modalEl).show();
+    }
+    
+    function previewImage(rawUrl) {
+      const cleanUrl = getDriveImgUrl(rawUrl);
+      Swal.fire({
+        title: 'หลักฐานการลา', imageUrl: cleanUrl, imageAlt: 'Evidence', width: 'auto', confirmButtonText: 'ปิดหน้าต่าง', confirmButtonColor: '#3085d6', showCloseButton: true, backdrop: 'rgba(0,0,0,0.6)',
+        didOpen: function() { const img = Swal.getImage(); img.onerror = function() { img.src = 'https://cdn-icons-png.flaticon.com/512/2748/2748558.png'; Swal.getTitle().innerText = 'ไม่สามารถโหลดรูปภาพได้'; }; }
+      });
+    }
+
+    function getDriveImgUrl(link) {
+        if (!link) return '';
+        try {
+            let id = '';
+            if (link.includes('id=')) { id = link.split('id=')[1].split('&')[0]; } else if (link.includes('/d/')) { id = link.split('/d/')[1].split('/')[0]; }
+            if (id) return 'https://drive.google.com/thumbnail?sz=w1000&id=' + id;
+            return link; 
+        } catch (e) { return link; }
+    }
+
+    function openLeaveFormWithDate(dateStr) {
+      const detailModalEl = document.getElementById('detailModal');
+      const detailModalInstance = bootstrap.Modal.getInstance(detailModalEl);
+      if (detailModalInstance) detailModalInstance.hide();
+
+      document.getElementById('modalTitle').innerHTML = '<i class="fas fa-calendar-plus me-2"></i> ขอลาหยุด';
+      document.getElementById('editId').value = ''; 
+      document.getElementById('leaveDate').value = dateStr; 
+      document.getElementById('leaveType').value = 'พักร้อน'; 
+      document.getElementById('leaveNote').value = ''; 
+      document.getElementById('leaveFile').value = ''; 
+      
+      document.getElementById('endDateDiv').classList.add('hidden');
+      document.getElementById('leaveEndDate').value = '';
+      
+      document.getElementById('swapDateDiv').classList.add('hidden');
+      document.getElementById('swapOriginalDate').value = '';
+      
+      document.getElementById('btnSubmit').innerHTML = '<i class="fas fa-save me-1"></i> บันทึกข้อมูล';
+      
+      setTimeout(function() { const leaveModalEl = document.getElementById('leaveModal'); const leaveModal = bootstrap.Modal.getOrCreateInstance(leaveModalEl); leaveModal.show(); }, 400);
+    }
+
+    function editItem(id) {
+       const item = allLeaves.find(function(l) { return l.id === id; }); if(!item) return;
+       bootstrap.Modal.getInstance(document.getElementById('detailModal')).hide();
+       document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit me-2"></i> แก้ไขรายการลา'; 
+       document.getElementById('editId').value = item.id; document.getElementById('leaveDate').value = item.date; document.getElementById('leaveType').value = item.type; document.getElementById('leaveNote').value = item.note || ''; document.getElementById('leaveFile').value = ''; document.getElementById('btnSubmit').innerHTML = '<i class="fas fa-save me-1"></i> บันทึกการแก้ไข';
+       setTimeout(function() { new bootstrap.Modal(document.getElementById('leaveModal')).show(); }, 400);
+    }
+
+  async function submitLeaveForm(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnSubmit'); const txt = btn.innerHTML;
+    const fileInput = document.getElementById('leaveFile');
+    if (fileInput.files.length > 0) { const f = fileInput.files[0]; if (f.size > 3 * 1024 * 1024) { Swal.fire('ไฟล์ใหญ่เกินไป', 'กรุณาอัปโหลดรูปภาพขนาดไม่เกิน 3MB', 'warning'); return; } }
+    
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> กำลังอัปโหลดและบันทึก...';
+    
+    let fileData = null, fileName = null, mimeType = null;
+    if (fileInput.files.length > 0) { const f = fileInput.files[0]; fileName = f.name; mimeType = f.type; fileData = (await getBase64(f)).split(',')[1]; }
+    
+    const originalId = document.getElementById('editId').value;
+    const isEditMode = (originalId !== "");
+    const leaveId = isEditMode ? originalId : 'L-' + new Date().getTime();
+
+    const endDateVal = document.getElementById('leaveEndDate').value;
+    const swapDateVal = document.getElementById('swapOriginalDate') ? document.getElementById('swapOriginalDate').value : '';
+
+    const fd = { 
+        id: leaveId, 
+        isEdit: isEditMode, 
+        date: document.getElementById('leaveDate').value, 
+        endDate: endDateVal, 
+        swapDate: swapDateVal, 
+        type: document.getElementById('leaveType').value, 
+        note: document.getElementById('leaveNote').value, 
+        fileData: fileData, 
+        fileName: fileName, 
+        mimeType: mimeType 
+    };
+
+    let datesToProcess = [fd.date];
+    if (!isEditMode && fd.type === 'ลาป่วย' && fd.endDate && fd.endDate > fd.date) {
+        let curr = new Date(fd.date);
+        let end = new Date(fd.endDate);
+        datesToProcess = [];
+        while(curr <= end) {
+            let yyyy = curr.getFullYear();
+            let mm = String(curr.getMonth() + 1).padStart(2, '0');
+            let dd = String(curr.getDate()).padStart(2, '0');
+            datesToProcess.push(`${yyyy}-${mm}-${dd}`);
+            curr.setDate(curr.getDate() + 1);
+        }
+    }
+
+    isSubmitting = true; 
+
+    callAPI('submitLeave', { form: fd, user: currentUser }).then(res => {
+        btn.disabled = false; btn.innerHTML = txt;
+        isSubmitting = false; 
+
+        if(res.status === 'success') {
+            function finishSubmitAndRefresh() {
+                const modalInst = bootstrap.Modal.getInstance(document.getElementById('leaveModal'));
+                if(modalInst) modalInst.hide();
+                Swal.fire({ icon: 'success', title: 'สำเร็จ', text: 'บันทึกข้อมูลเรียบร้อย', timer: 1500, showConfirmButton: false });
+                loadData();
+            }
+
+            try {
+                let fbPromises = datesToProcess.map((d, idx) => {
+                    let loopLeaveId = (datesToProcess.length > 1) ? leaveId + '-' + idx : leaveId;
+                    let fbData = {
+                        id: loopLeaveId, username: currentUser.username, name: currentUser.name, date: d, type: fd.type, note: fd.note || '-',
+                        timestamp: new Date().toISOString(), status: fd.type === 'วันหยุดประจำสัปดาห์' ? 'Approved' : 'Pending',
+                        approver: fd.type === 'วันหยุดประจำสัปดาห์' ? 'System-Auto' : ''
+                    };
+                    return db.ref('Leaves/' + loopLeaveId).set(fbData);
+                });
+                
+                Promise.all(fbPromises)
+                    .then(() => { finishSubmitAndRefresh(); })
+                    .catch((err) => { 
+                        console.log("Firebase Error (Ignored):", err); 
+                        finishSubmitAndRefresh(); 
+                    });
+            } catch(e) {
+                finishSubmitAndRefresh();
+            }
+        } else {
+            Swal.fire('แจ้งเตือนระบบ', res.message, 'warning');
+        }
+    }).catch(error => {
+        btn.disabled = false; btn.innerHTML = txt;
+        isSubmitting = false; 
+        Swal.fire('ผิดพลาด', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้: ' + error.message, 'error');
+    });
+  }
+    
+    function getBase64(file) { return new Promise(function(r, j) { const rd = new FileReader(); rd.readAsDataURL(file); rd.onload = function() { r(rd.result); }; rd.onerror = function(e) { j(e); }; }); }
+
+    function saveQuota() { 
+       if(!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'assistant')) return; 
+       let qM = document.getElementById('quotaM').value;
+       let qQ = document.getElementById('quotaQ').value;
+       let qT = document.getElementById('quotaT').value;
+       callAPI('updateQuota', { qM: qM, qQ: qQ, qT: qT }).then(res => {
+           Swal.fire('บันทึกสำเร็จ', res.message, 'success'); 
+           loadData(); 
+       }).catch(err => {
+           Swal.fire('ข้อผิดพลาด', err.message, 'error');
+       });
+    }
+    
+    function approveItem(id) { 
+       callAPI('approveLeave', { id: id, adminName: currentUser.name }).then(res => {
+           loadData(); 
+           Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, timerProgressBar: true }).fire({ icon: 'success', title: 'อนุมัติเรียบร้อย' }); 
+       }).catch(err => {
+           Swal.fire('ข้อผิดพลาด', err.message, 'error'); 
+       });
+    }
+
+    function delLeave(id) { 
+       const item = allLeaves.find(function(l) { return l.id === id; }); const targetName = item ? item.name : 'รายการนี้'; 
+       Swal.fire({ title: 'ยืนยันการลบ?', text: 'ต้องการลบรายการลาของ "' + targetName + '" ใช่หรือไม่?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'ใช่, ลบเลย', cancelButtonText: 'ยกเลิก'
+       }).then(function(r) { 
+           if (r.isConfirmed) { 
+               callAPI('deleteLeave', { id: id, user: currentUser }).then(res => {
+                   if(res.status==='success') { 
+                       loadData(); 
+                       Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, timerProgressBar: true }).fire({ icon: 'success', title: 'ลบเรียบร้อย' }); 
+                   } else { 
+                       Swal.fire('ลบไม่ได้', res.message, 'error'); 
+                   } 
+               }).catch(err => {
+                   Swal.fire('ข้อผิดพลาด', err.message, 'error'); 
+               });
+           } 
+       }); 
+    }
+
+    function runAutoHoliday() {
+      Swal.fire({ title: 'กำลังโหลดข้อมูล...', didOpen: function() { Swal.showLoading(); } });
+      callAPI('getAllUsers', { requestUsername: currentUser.username }).then(res => {
+        if (res.status === 'error') { Swal.fire('ผิดพลาด', res.message, 'error'); return; }
+        let userOptions = '<option value="ALL">🌟 สร้างให้ทุกคน (ที่ตั้งวันหยุดไว้)</option>';
+        res.users.forEach(function(u) { if (u.dayOff !== "" && u.dayOff !== null) { userOptions += '<option value="' + u.username + '">👤 ' + u.name + ' (ไอดี: ' + u.username + ')</option>'; } });
+        const now = new Date(); const m = now.getMonth()+1; const y = now.getFullYear();
+        
+        const html = '<div class="mb-3 text-start"><label class="form-label fw-bold text-primary">เลือกเป้าหมาย</label><select id="swal-target-user" class="form-select border-primary shadow-sm">' + userOptions + '</select></div>' +
+          '<div class="mb-3 text-start"><label class="form-label fw-bold">เลือกเดือน</label><select id="swal-month" class="form-select shadow-sm">' +
+          '<option value="1" ' + (m===1?'selected':'') + '>มกราคม</option><option value="2" ' + (m===2?'selected':'') + '>กุมภาพันธ์</option><option value="3" ' + (m===3?'selected':'') + '>มีนาคม</option><option value="4" ' + (m===4?'selected':'') + '>เมษายน</option><option value="5" ' + (m===5?'selected':'') + '>พฤษภาคม</option><option value="6" ' + (m===6?'selected':'') + '>มิถุนายน</option><option value="7" ' + (m===7?'selected':'') + '>กรกฎาคม</option><option value="8" ' + (m===8?'selected':'') + '>สิงหาคม</option><option value="9" ' + (m===9?'selected':'') + '>กันยายน</option><option value="10" ' + (m===10?'selected':'') + '>ตุลาคม</option><option value="11" ' + (m===11?'selected':'') + '>พฤศจิกายน</option><option value="12" ' + (m===12?'selected':'') + '>ธันวาคม</option></select></div>' +
+          '<div class="mb-3 text-start"><label class="form-label fw-bold">เลือกปี (ค.ศ.)</label><input type="number" id="swal-year" class="form-control shadow-sm" value="' + y + '"></div><div class="text-muted small text-center mt-2">* ใช้สร้างและลบ "วันหยุดประจำสัปดาห์" อัตโนมัติ</div>';
+
+        Swal.fire({ title: 'จัดการวันหยุดประจำสัปดาห์', html: html, icon: 'question', showCancelButton: true, showDenyButton: true, confirmButtonText: '<i class="fas fa-plus-circle"></i> สร้างใหม่', confirmButtonColor: '#198754', denyButtonText: '<i class="fas fa-trash"></i> ลบข้อมูลเดือนนี้', denyButtonColor: '#dc3545', cancelButtonText: 'ยกเลิก', preConfirm: function() { return { m: document.getElementById('swal-month').value, y: document.getElementById('swal-year').value, target: document.getElementById('swal-target-user').value }; }
+        }).then(function(result) {
+          if (result.isConfirmed) { 
+              Swal.fire({ title: 'กำลังสร้าง...', didOpen:function(){Swal.showLoading();} }); 
+              callAPI('generateWeeklyHolidays', { user: currentUser, month: result.value.m, year: result.value.y, target: result.value.target }).then(r => {
+                  if (r.status === 'success') { Swal.fire('เรียบร้อย', r.message, 'success'); loadData(); } 
+                  else { Swal.fire('ผิดพลาด', r.message, 'error'); } 
+              }).catch(err => {
+                  Swal.fire('ข้อผิดพลาด', err.message, 'error');
+              }); 
+          } 
+          else if (result.isDenied) {
+            const mVal = document.getElementById('swal-month').value; const yVal = document.getElementById('swal-year').value; const targetVal = document.getElementById('swal-target-user').value;
+            let delMsg = targetVal === 'ALL' ? 'ลบวันหยุดประจำสัปดาห์ของ "ทุกคน" เดือน ' + mVal + '/' + yVal + '?' : 'ลบวันหยุดประจำสัปดาห์ของเป้าหมายเดือน ' + mVal + '/' + yVal + '?';
+            Swal.fire({ title: 'ยืนยันการลบ?', text: delMsg, icon: 'warning', showCancelButton: true, confirmButtonText: 'ใช่, ลบเลย', confirmButtonColor: '#d33' }).then(function(c) { 
+                if (c.isConfirmed) { 
+                    Swal.fire({ title: 'กำลังลบ...', didOpen:function(){Swal.showLoading();} }); 
+                    callAPI('deleteWeeklyHolidays', { user: currentUser, month: mVal, year: yVal, target: targetVal }).then(r => {
+                        if (r.status === 'success') { Swal.fire('ลบแล้ว', r.message, 'success'); loadData(); } 
+                        else { Swal.fire('แจ้งเตือน', r.message, 'warning'); } 
+                    }).catch(err => {
+                        Swal.fire('ข้อผิดพลาด', err.message, 'error');
+                    }); 
+                } 
+            });
+          }
+        });
+      }).catch(err => {
+          Swal.fire('ข้อผิดพลาดระบบ', err.message, 'error');
+      }); 
+    }
+
+    function updateAdminBar() {
+      if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'assistant')) { document.getElementById('adminStatusBar').classList.add('hidden'); return; }
+      const pendingCount = allLeaves.filter(function(l) { return l.status !== 'Approved'; }).length;
+      const bar = document.getElementById('adminStatusBar'); bar.classList.remove('hidden');
+      if (pendingCount > 0) { bar.className = 'fixed-bottom p-2 text-center text-white small bg-danger shadow-lg'; bar.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> รออนุมัติ <b>' + pendingCount + '</b> รายการ'; } 
+      else { bar.className = 'fixed-bottom p-2 text-center text-white small bg-success shadow-lg'; bar.innerHTML = '<i class="fas fa-check-circle me-1"></i> เรียบร้อย (ไม่มีค้าง)'; }
+    }
+    
+    function filterPending() { Swal.fire('สถานะ', document.getElementById('adminStatusBar').innerText, 'info'); }
+
+    function getBadgeClass(type) {
+       if (type === 'ขาดงาน' || type === 'อื่นๆ') return 'bg-orange';
+       if (type === 'วันหยุดประจำสัปดาห์') return 'bg-danger';
+       if (type === 'พักร้อน') return 'bg-purple';
+       if (type === 'หยุด นข.' || type === 'ลากิจ') return 'bg-primary';
+       if (type === 'ลาป่วย') return 'bg-warning text-dark';
+       if (type === 'ขอรับรองเวลา') return 'bg-secondary';
+       if (type === 'วันหยุดพิเศษ') return 'bg-lightgreen';
+       if (type.includes('กิจครึ่งวัน')) return 'bg-info text-dark';
+       return 'bg-secondary';
+    }
+
+    function toggleStatDetail(elementId) { const el = document.getElementById(elementId); el.style.display = (el.style.display === 'none') ? 'block' : 'none'; }
+
+    function showMyStats() {
+      new bootstrap.Modal(document.getElementById('statsModal')).show();
+      const list = document.getElementById('statsList'); list.innerHTML = '<li class="list-group-item text-center text-muted">กำลังโหลดข้อมูล...</li>';
+      callAPI('getUserStats', { username: currentUser.username }).then(res => {
+          const period = document.getElementById('statsPeriod'); list.innerHTML = ''; period.innerText = res.period;
+          if (Object.keys(res.stats).length === 0) { list.innerHTML = '<li class="list-group-item text-center text-muted">ยังไม่มีประวัติการลาในรอบปีนี้</li>'; } 
+          else {
+            let uniqueId = 0;
+            for (const key in res.stats) {
+              uniqueId++;
+              let dateItems = res.stats[key].map(function(d) { return '<div class="py-2 px-3 border-bottom small text-muted"><i class="far fa-calendar-check text-success me-2"></i>' + d + '</div>'; }).join('');
+              list.innerHTML += '<li class="list-group-item p-0 border-0 mb-1 rounded shadow-sm">' +
+                    '<div class="d-flex justify-content-between align-items-center p-3 bg-white" style="cursor:pointer;" onclick="toggleStatDetail(\'stat-' + uniqueId + '\')">' +
+                        '<div><span class="fw-bold text-dark">' + key + '</span><br><small class="text-muted" style="font-size:0.75em">กดเพื่อดูวันที่</small></div><span class="badge ' + getBadgeClass(key) + ' rounded-pill fs-6">' + res.stats[key].length + ' ครั้ง</span></div>' +
+                    '<div id="stat-' + uniqueId + '" style="display:none; background-color:#f8f9fa;">' + dateItems + '</div></li>';
+            }
+            list.innerHTML += '<li class="list-group-item active d-flex justify-content-between align-items-center mt-2 rounded shadow-sm"><strong>ยอดรวมสุทธิ</strong> <strong>' + res.total + ' ครั้ง</strong></li>';
+          }
+      }).catch(err => {
+          list.innerHTML = '<li class="list-group-item text-center text-danger">เกิดข้อผิดพลาด: ' + err.message + '</li>';
+      });
+    }
+
+    function openLeaderboardModal() {
+      new bootstrap.Modal(document.getElementById('leaderboardModal')).show();
+      const list = document.getElementById('leaderboardList');
+      list.innerHTML = '<li class="list-group-item text-center py-4 bg-transparent"><div class="spinner-border text-info"></div><div class="mt-2 text-muted small">กำลังประมวลผล...</div></li>';
+      callAPI('getAdminLeaderboard', { requestUsername: currentUser.username }).then(res => {
+        if(res.status === 'error') { list.innerHTML = '<li class="list-group-item text-center text-danger">' + res.message + '</li>'; return; }
+        document.getElementById('lbPeriod').innerText = res.period;
+        if(res.data.length === 0) { list.innerHTML = '<li class="list-group-item text-center text-muted py-4 bg-transparent">ยังไม่มีข้อมูลการลาในรอบปีนี้</li>'; return; }
+
+        let html = '';
+        res.data.forEach(function(user, index) {
+            let rankHtml = '';
+            if(index === 0) rankHtml = '<span class="fs-3 drop-shadow">🥇</span>'; else if(index === 1) rankHtml = '<span class="fs-3 drop-shadow">🥈</span>'; else if(index === 2) rankHtml = '<span class="fs-3 drop-shadow">🥉</span>'; else rankHtml = '<span class="badge bg-secondary me-1 px-2 py-1 shadow-sm">' + (index + 1) + '</span>';
+            let detailsHtml = ''; let typeIndex = 0;
+            for (const leaveType in user.details) {
+               let typeId = 'lb-type-' + index + '-' + typeIndex;
+               let datesHtml = user.details[leaveType].map(function(d) { return '<div class="small text-muted py-1 ps-4 border-bottom"><i class="far fa-calendar-check me-2 text-success"></i>วันที่ ' + d + '</div>'; }).join('');
+               detailsHtml += '<div class="d-flex justify-content-between align-items-center py-2 px-3 border-bottom bg-white" style="cursor: pointer;" onclick="toggleStatDetail(\'' + typeId + '\')"><span class="fw-bold small text-dark"><i class="fas fa-folder-open me-2 text-warning"></i>' + leaveType + '</span><span class="badge bg-secondary rounded-pill shadow-sm">' + user.details[leaveType].length + ' วัน</span></div><div id="' + typeId + '" style="display: none; background-color: #fafafa;">' + datesHtml + '</div>';
+               typeIndex++;
+            }
+            html += '<li class="list-group-item p-0 border-0 mb-2 shadow-sm rounded">' +
+                '<div class="d-flex justify-content-between align-items-center p-3 bg-white rounded" style="cursor: pointer;" onclick="toggleStatDetail(\'lb-detail-' + index + '\')"><div class="d-flex align-items-center"><div style="width: 40px; text-align: center;">' + rankHtml + '</div><span class="fw-bold ms-2 text-dark fs-6">' + user.name + '</span></div><div class="text-end"><span class="badge bg-danger rounded-pill fs-6 shadow-sm">' + user.total + ' ครั้ง</span><br><small class="text-muted" style="font-size:0.65rem;">(คลิกดูประเภท)</small></div></div>' +
+                '<div id="lb-detail-' + index + '" style="display: none; border-top: 1px solid #eee; padding-bottom: 5px; background-color: #f8f9fa;"><div class="fw-bold small px-3 py-2 text-primary"><i class="fas fa-chart-pie me-1"></i> สรุปตามประเภท:</div>' + detailsHtml + '</div></li>';
+        });
+        list.innerHTML = html;
+      }).catch(err => {
+          list.innerHTML = '<li class="list-group-item text-center text-danger">เกิดข้อผิดพลาด: ' + err.message + '</li>';
+      });
+    }
+
+    function openChangePasswordModal() { document.getElementById('oldPass').value = ''; document.getElementById('newPass').value = ''; document.getElementById('confirmPass').value = ''; new bootstrap.Modal(document.getElementById('changePassModal')).show(); }
+
+    function submitChangePassword(e) {
+      e.preventDefault(); const oldPass = document.getElementById('oldPass').value.trim(); const newPass = document.getElementById('newPass').value.trim(); const confirmPass = document.getElementById('confirmPass').value.trim();
+      if (newPass !== confirmPass) { Swal.fire('ข้อผิดพลาด', 'รหัสผ่านใหม่ไม่ตรงกัน', 'error'); return; } if (newPass.length < 4) { Swal.fire('ข้อผิดพลาด', 'รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร', 'error'); return; }
+      const btn = document.getElementById('btnChangePass'); const originalText = btn.innerText; btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...';
+      callAPI('changePassword', { username: currentUser.username, oldPass: oldPass, newPass: newPass }).then(res => {
+        btn.disabled = false; btn.innerText = originalText;
+        if (res.status === 'success') { bootstrap.Modal.getInstance(document.getElementById('changePassModal')).hide(); Swal.fire('สำเร็จ', res.message, 'success'); } else { Swal.fire('เกิดข้อผิดพลาด', res.message, 'error'); }
+      }).catch(err => {
+        btn.disabled = false; btn.innerText = originalText;
+        Swal.fire('ข้อผิดพลาดระบบ', err.message, 'error');
+      });
+    }
+
+    function openUserManageModal() { const el = document.getElementById('userManageModal'); new bootstrap.Modal(el).show(); el.removeAttribute('tabindex'); loadAllUsers(); }
+
+    function loadAllUsers() {
+      const tbody = document.getElementById('userListBody'); tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-muted"><div class="spinner-border spinner-border-sm me-2"></div>กำลังโหลด...</td></tr>';
+      callAPI('getAllUsers', { requestUsername: currentUser.username }).then(res => {
+        if (res.status === 'error') { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger fw-bold py-3">' + res.message + '</td></tr>'; return; }
+        tbody.innerHTML = '';
+        res.users.forEach(function(u) {
+          let roleBadge = u.role === 'admin' ? '<span class="badge bg-danger shadow-sm">Admin</span>' : (u.role === 'assistant' ? '<span class="badge bg-warning text-dark shadow-sm">ผู้ช่วย</span>' : '<span class="badge bg-secondary shadow-sm">สมาชิก</span>');
+          const days = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์']; let dayOffText = (u.dayOff !== "" && u.dayOff != null) ? days[u.dayOff] : '-';
+          let deptText = u.dept || 'M';
+          let row = '<tr><td class="fw-bold text-secondary">' + u.username + '</td><td class="text-dark fw-bold">' + u.name + '</td><td>' + roleBadge + '</td><td><span class="badge bg-info text-dark shadow-sm">แผนก ' + deptText + '</span></td><td>' + dayOffText + '</td>' +
+              '<td><button class="btn btn-outline-primary btn-sm shadow-sm py-0" onclick="openEditUserForm(\'' + u.username + '\', \'' + u.name + '\', \'' + u.role + '\', \'' + u.dayOff + '\', \'' + deptText + '\')" title="แก้ไขข้อมูล"><i class="fas fa-edit"></i></button><button class="btn btn-outline-warning btn-sm shadow-sm py-0 ms-1" onclick="resetUserPassword(\'' + u.username + '\')" title="รีเซ็ตรหัสผ่าน"><i class="fas fa-key"></i></button><button class="btn btn-outline-danger btn-sm shadow-sm py-0 ms-1" onclick="deleteUser(\'' + u.username + '\')" title="ลบสมาชิก"><i class="fas fa-trash"></i></button></td></tr>';
+          tbody.innerHTML += row;
+        });
+      }).catch(err => {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger fw-bold py-3">เกิดข้อผิดพลาด: ' + err.message + '</td></tr>';
+      });
+    }
+
+    function openEditUserForm(username, currentName, currentRole, currentDayOff, currentDept) {
+      const modalEl = document.getElementById('userManageModal'); const modalInstance = bootstrap.Modal.getInstance(modalEl); if (modalInstance) modalInstance.hide();
+      let dOff = (currentDayOff === "null" || currentDayOff === "undefined" || currentDayOff == null) ? "" : currentDayOff;
+      let dDept = currentDept || 'M';
+      Swal.fire({ 
+        title: 'แก้ไขข้อมูล: ' + username, 
+        html: '<div class="text-start mb-2 small fw-bold">ชื่อ-สกุล</div><input id="edit-name" class="swal2-input mt-0" placeholder="ชื่อ-สกุล" value="' + currentName + '">' +
+              '<div class="text-start mt-3 mb-2 small fw-bold">ระดับสิทธิ์</div><select id="edit-role" class="swal2-select mt-0" style="width:80%;"><option value="user" ' + (currentRole === 'user' ? 'selected' : '') + '>สมาชิกทั่วไป</option><option value="assistant" ' + (currentRole === 'assistant' ? 'selected' : '') + '>ผู้ช่วย</option><option value="admin" ' + (currentRole === 'admin' ? 'selected' : '') + '>Admin</option></select>' +
+              '<div class="text-start mt-3 mb-2 small fw-bold">แผนก</div><select id="edit-dept" class="swal2-select mt-0" style="width:80%;"><option value="M" ' + (dDept === 'M' ? 'selected' : '') + '>แผนก M</option><option value="Q" ' + (dDept === 'Q' ? 'selected' : '') + '>แผนก Q</option><option value="T" ' + (dDept === 'T' ? 'selected' : '') + '>แผนก T</option></select>' +
+              '<div class="text-start mt-3 mb-2 small fw-bold">วันหยุดประจำสัปดาห์</div><select id="edit-dayoff" class="swal2-select mt-0" style="width:80%;"><option value="" ' + (dOff === '' ? 'selected' : '') + '>- ไม่มีวันหยุด -</option><option value="0" ' + (dOff === '0' ? 'selected' : '') + '>อาทิตย์</option><option value="1" ' + (dOff === '1' ? 'selected' : '') + '>จันทร์</option><option value="2" ' + (dOff === '2' ? 'selected' : '') + '>อังคาร</option><option value="3" ' + (dOff === '3' ? 'selected' : '') + '>พุธ</option><option value="4" ' + (dOff === '4' ? 'selected' : '') + '>พฤหัส</option><option value="5" ' + (dOff === '5' ? 'selected' : '') + '>ศุกร์</option><option value="6" ' + (dOff === '6' ? 'selected' : '') + '>เสาร์</option></select>',
+        focusConfirm: false, showCancelButton: true, confirmButtonText: 'บันทึกการแก้ไข', confirmButtonColor: '#0d6efd', 
+        preConfirm: function() { return { name: document.getElementById('edit-name').value.trim(), role: document.getElementById('edit-role').value, dayOff: document.getElementById('edit-dayoff').value, dept: document.getElementById('edit-dept').value }; }
+      }).then(function(result) {
+        if (modalInstance) modalInstance.show();
+        if (result.isConfirmed) { 
+            if(!result.value.name) { Swal.fire('ข้อมูลไม่ครบ', 'กรุณากรอกชื่อ-สกุล', 'error'); return; } 
+            Swal.fire({title: 'กำลังบันทึก...', didOpen:function(){Swal.showLoading();} }); 
+            callAPI('adminEditUser', { requestUsername: currentUser.username, targetUsername: username, editData: result.value }).then(res => {
+                if(res.status === 'success') { Swal.fire('สำเร็จ', res.message, 'success'); loadAllUsers(); } 
+                else { Swal.fire('ผิดพลาด', res.message, 'error'); } 
+            }).catch(err => {
+                Swal.fire('ข้อผิดพลาด', err.message, 'error');
+            }); 
+        }
+      });
+    }
+
+    function openAddUserForm() {
+      const modalEl = document.getElementById('userManageModal'); const modalInstance = bootstrap.Modal.getInstance(modalEl); if (modalInstance) modalInstance.hide();
+      Swal.fire({ title: 'เพิ่มสมาชิกใหม่', html: '<input id="new-user" class="swal2-input" placeholder="Username (ไอดี)"><input id="new-pass" type="password" class="swal2-input" placeholder="Password (รหัสผ่าน)"><input id="new-name" class="swal2-input" placeholder="ชื่อ-สกุล"><select id="new-role" class="swal2-select" style="width:80%;margin-top:10px;"><option value="user">สมาชิกทั่วไป</option><option value="assistant">ผู้ช่วย</option><option value="admin">Admin</option></select><select id="new-dept" class="swal2-select" style="width:80%;margin-top:10px;"><option value="M">แผนก M</option><option value="Q">แผนก Q</option><option value="T">แผนก T</option></select><select id="new-dayoff" class="swal2-select" style="width:80%;margin-top:10px;"><option value="">- ไม่มีวันหยุด -</option><option value="0">อาทิตย์</option><option value="1">จันทร์</option><option value="2">อังคาร</option><option value="3">พุธ</option><option value="4">พฤหัส</option><option value="5">ศุกร์</option><option value="6">เสาร์</option></select>',
+        focusConfirm: false, showCancelButton: true, confirmButtonText: 'บันทึก', confirmButtonColor: '#198754', preConfirm: function() { return { username: document.getElementById('new-user').value.trim(), password: document.getElementById('new-pass').value.trim(), name: document.getElementById('new-name').value.trim(), role: document.getElementById('new-role').value, dept: document.getElementById('new-dept').value, dayOff: document.getElementById('new-dayoff').value }; }
+      }).then(function(result) {
+        if (modalInstance) modalInstance.show();
+        if (result.isConfirmed) { 
+            if(!result.value.username || !result.value.password) { Swal.fire('ข้อมูลไม่ครบ', '', 'error'); return; } 
+            Swal.fire({title: 'กำลังบันทึก...', didOpen:function(){Swal.showLoading();} }); 
+            callAPI('adminAddUser', { requestUsername: currentUser.username, newUserObj: result.value }).then(res => {
+                if(res.status === 'success') { Swal.fire('สำเร็จ', res.message, 'success'); loadAllUsers(); } 
+                else { Swal.fire('ผิดพลาด', res.message, 'error'); } 
+            }).catch(err => {
+                Swal.fire('ข้อผิดพลาด', err.message, 'error');
+            }); 
+        }
+      });
+    }
+
+    function resetUserPassword(target) {
+      const modalEl = document.getElementById('userManageModal'); const modalInstance = bootstrap.Modal.getInstance(modalEl); if (modalInstance) modalInstance.hide();
+      Swal.fire({ title: 'เปลี่ยนรหัสของ ' + target, input: 'text', inputPlaceholder: 'กรอกรหัสใหม่ที่นี่', showCancelButton: true, confirmButtonText: 'เปลี่ยนรหัส', confirmButtonColor: '#ffc107', inputValidator: function(v) { if (!v) return 'กรุณากรอกรหัสผ่านด้วยครับ'; } 
+      }).then(function(r) { 
+          if (modalInstance) modalInstance.show(); 
+          if (r.isConfirmed) { 
+              Swal.fire({title: 'กำลังประมวลผล...', didOpen:function(){Swal.showLoading();} }); 
+              callAPI('adminResetPassword', { requestUsername: currentUser.username, targetUsername: target, newPassword: r.value }).then(res => {
+                  Swal.fire(res.status==='success'?'สำเร็จ':'ผิดพลาด', res.message, res.status==='success'?'success':'error'); 
+              }).catch(err => {
+                  Swal.fire('ข้อผิดพลาด', err.message, 'error');
+              }); 
+          } 
+      });
+    }
+
+    function deleteUser(target) {
+      Swal.fire({ title: 'ลบสมาชิก ' + target + '?', text: "ข้อมูลนี้จะไม่สามารถกู้คืนได้", icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยันการลบ', confirmButtonColor: '#d33' 
+      }).then(function(r) { 
+          if (r.isConfirmed) { 
+              Swal.fire({title: 'กำลังลบ...', didOpen:function(){Swal.showLoading();} }); 
+              callAPI('adminDeleteUser', { requestUsername: currentUser.username, targetUsername: target }).then(res => {
+                  if(res.status === 'success') { Swal.fire('ลบเรียบร้อย', res.message, 'success'); loadAllUsers(); } 
+                  else { Swal.fire('ผิดพลาด', res.message, 'error'); } 
+              }).catch(err => {
+                  Swal.fire('ข้อผิดพลาด', err.message, 'error');
+              }); 
+          } 
+      });
+    }
+    
+    let isModalOpen = false;
+
+    window.addEventListener('load', function() {
+        if (!window.location.hash) {
+            window.history.replaceState({ page: 'home' }, '', window.location.href + '#');
+        }
+    });
+
+    document.addEventListener('show.bs.modal', function () {
+        isModalOpen = true;
+        window.history.pushState({ page: 'modal' }, '', window.location.href + '#modal');
+    });
+
+    document.addEventListener('hide.bs.modal', function () {
+        isModalOpen = false;
+        if (window.location.hash === '#modal') {
+            window.history.back(); 
+        }
+    });
+
+    window.addEventListener('popstate', function (event) {
+        if (isModalOpen) {
+            const openModals = document.querySelectorAll('.modal.show');
+            openModals.forEach(m => {
+                const instance = bootstrap.Modal.getInstance(m);
+                if (instance) instance.hide();
+            });
+            window.history.pushState({ page: 'home' }, '', window.location.href);
+        }
+    });
+    
+    document.getElementById('leaveType').addEventListener('change', function(e) {
+        const endDateDiv = document.getElementById('endDateDiv');
+        const endDateInput = document.getElementById('leaveEndDate');
+        const swapDateDiv = document.getElementById('swapDateDiv');
+        const swapInput = document.getElementById('swapOriginalDate');
+        
+        endDateDiv.classList.add('hidden');
+        swapDateDiv.classList.add('hidden');
+        swapInput.removeAttribute('required');
+
+        if (e.target.value === 'ลาป่วย') {
+            endDateDiv.classList.remove('hidden');
+            swapInput.value = ''; 
+        } else if (e.target.value === 'สลับวันหยุด') {
+            swapDateDiv.classList.remove('hidden');
+            swapInput.setAttribute('required', 'true'); 
+        } else {
+            endDateInput.value = '';
+            swapInput.value = '';
+        }
+    });
+
+    function requestSpecialQuotaUI() {
+        Swal.fire({
+            title: '⭐ ขอโควต้าพิเศษ',
+            text: 'กรณีโควต้าแผนกเต็ม แต่ต้องการขออนุญาตแทรกลา (ใช้สิทธิ์ได้ 1 ครั้งต่อการขอ)',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#ffc107',
+            confirmButtonText: 'ยืนยันการขอสิทธิ์',
+            cancelButtonText: 'ยกเลิก'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({title: 'กำลังส่งคำขอ...', didOpen: () => Swal.showLoading()});
+                callAPI('requestSpecialQuota', { username: currentUser.username, name: currentUser.name }).then(res => {
+                    Swal.fire(res.status === 'success' ? 'สำเร็จ' : 'ผิดพลาด', res.message, res.status);
+                }).catch(err => {
+                    Swal.fire('ข้อผิดพลาดระบบ', err.message, 'error');
+                });
+            }
+        });
+    }
+
+    function openManageSpecialQuota() {
+        Swal.fire({title: 'กำลังโหลดข้อมูล...', didOpen: () => Swal.showLoading()});
+        callAPI('getSpecialQuotaRequests', { adminUsername: currentUser.username }).then(res => {
+            if (res.status === 'error') { Swal.fire('ผิดพลาด', res.message, 'error'); return; }
+            if (res.data.length === 0) { Swal.fire('ข้อมูลว่างเปล่า', 'ไม่มีคำขอโควต้าพิเศษค้างอยู่ครับ', 'info'); return; }
+            
+            let html = '<div class="table-responsive"><table class="table table-sm text-center"><thead><tr><th>ชื่อ-สกุล</th><th>เวลาขอ</th><th>จัดการ</th></tr></thead><tbody>';
+            res.data.forEach(function(req) {
+                html += '<tr><td class="align-middle fw-bold">' + req.name + '</td><td class="align-middle small text-muted">' + req.timestamp + '</td>' +
+                        '<td><button class="btn btn-success btn-sm me-1 shadow-sm" onclick="manageQuotaTicket(\'' + req.id + '\', \'Approved\')"><i class="fas fa-check"></i></button>' +
+                        '<button class="btn btn-danger btn-sm shadow-sm" onclick="manageQuotaTicket(\'' + req.id + '\', \'Rejected\')"><i class="fas fa-times"></i></button></td></tr>';
+            });
+            html += '</tbody></table></div>';
+            
+            Swal.fire({ title: 'จัดการคำขอโควต้าพิเศษ', html: html, width: '600px', showConfirmButton: false, showCloseButton: true });
+        }).catch(err => {
+            Swal.fire('ข้อผิดพลาดระบบ', err.message, 'error');
+        });
+    }
+
+    function manageQuotaTicket(reqId, action) {
+        Swal.fire({title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading()});
+        callAPI('manageSpecialQuotaAction', { reqId: reqId, actionType: action, adminUsername: currentUser.username }).then(res => {
+            if (res.status === 'success') {
+                Swal.fire('เรียบร้อย', res.message, 'success').then(() => { openManageSpecialQuota(); loadData(); });
+            } else { Swal.fire('ผิดพลาด', res.message, 'error'); }
+        }).catch(err => {
+            Swal.fire('ข้อผิดพลาดระบบ', err.message, 'error');
+        });
+    }
+
+  </script>
+</body>
+</html>
