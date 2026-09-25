@@ -431,7 +431,7 @@
     // ตั้งค่าการเชื่อมต่อ Supabase
     const SUPABASE_URL = "https://vyrzjufrkkihzcebfasi.supabase.co";
     const SUPABASE_KEY = "sb_publishable_Rt5A7MrALN-6HaSz4yHg-Q_ExDFCJ1X";
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // ฟังก์ชันเข้ารหัสผ่านให้ตรงกับระบบเก่า
     function hashPassword(rawPassword) {
@@ -455,18 +455,6 @@
 
     document.addEventListener('focusin', function (e) { e.stopImmediatePropagation(); }, true);
 
-    // ยังคงให้รับข้อมูล Realtime จาก Firebase เหมือนเดิม
-    const firebaseConfig = {
-      apiKey: "AIzaSyDr5gF1IlAhUe46p6wL0SPiFEeD-_Og1F8",
-      authDomain: "leavesystem-mqt.firebaseapp.com",
-      databaseURL: "https://leavesystem-mqt-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "leavesystem-mqt",
-      storageBucket: "leavesystem-mqt.firebasestorage.app",
-      messagingSenderId: "306577878528",
-      appId: "1:306577878528:web:7bb31f2a09e432be3732e5"
-    };
-    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-    const db = firebase.database();
 
     let currentUser = null;
     let isSubmitting = false; 
@@ -530,7 +518,7 @@
       
       try {
         const hashedPass = hashPassword(p);
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
           .from('users')
           .select('*')
           .eq('username', u)
@@ -571,24 +559,23 @@
     async function loadData() {
       try {
         // 1. ดึงโควต้าจากตาราง config
-        const { data: configData } = await supabase.from('config').select('*').eq('id', 1).single();
+        const { data: configData } = await supabaseClient.from('config').select('*').eq('id', 1).single();
         if(configData) {
             dailyLimit = { M: configData.quota_m, Q: configData.quota_q, T: configData.quota_t };
         } else {
             dailyLimit = { M: 7, Q: 0, T: 0 };
         }
 
-        // 2. ดึงข้อมูลแผนกของผู้ใช้ทั้งหมด (เพื่อคำนวณโควต้า)
-        const { data: usersData } = await supabase.from('users').select('username, dept');
+        // 2. ดึงข้อมูลแผนกของผู้ใช้ทั้งหมด
+        const { data: usersData } = await supabaseClient.from('users').select('username, dept');
         userDeptMap = {};
         if(usersData) {
             usersData.forEach(u => { userDeptMap[u.username] = u.dept || 'M'; });
         }
-        // กำหนดแผนกของตัวเอง (ดึงจาก LocalStorage หรือฐานข้อมูล)
         myDept = currentUser ? (currentUser.dept || userDeptMap[currentUser.username] || 'M') : 'M';
 
         // 3. ดึงประวัติการลาทั้งหมด
-        const { data: leavesData } = await supabase.from('leaves').select('*');
+        const { data: leavesData } = await supabaseClient.from('leaves').select('*');
         allLeaves = (leavesData || []).map(l => ({
            id: l.id,
            username: l.username,
@@ -601,13 +588,13 @@
            approver: l.approver
         }));
 
-        // 4. จัดการหน้าจอ Admin (โชว์โควต้าและตั๋วพิเศษ)
+        // 4. จัดการหน้าจอ Admin
         if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'assistant')) {
            if(document.getElementById('quotaM')) document.getElementById('quotaM').value = dailyLimit.M || 0;
            if(document.getElementById('quotaQ')) document.getElementById('quotaQ').value = dailyLimit.Q || 0;
            if(document.getElementById('quotaT')) document.getElementById('quotaT').value = dailyLimit.T || 0;
 
-           const { count } = await supabase.from('special_quota').select('*', { count: 'exact', head: true }).eq('status', 'Pending');
+           const { count } = await supabaseClient.from('special_quota').select('*', { count: 'exact', head: true }).eq('status', 'Pending');
            let sqBtn = document.getElementById('btnAdminSQ');
            if (sqBtn) {
                if (count > 0) {
@@ -622,7 +609,6 @@
            }
         }
 
-        // วาดปฏิทินใหม่
         renderCalendar();
         if (currentViewDate) {
            const modalEl = document.getElementById('detailModal');
