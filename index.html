@@ -568,23 +568,50 @@
       });
     }
 
-    function loadData() {
-      let reqUser = currentUser ? currentUser.username : ""; 
-      callAPI('getDataForCalendar', { requestUsername: reqUser }).then(res => {
-        allLeaves = res.leaves; 
-        dailyLimit = res.limit;
-        myDept = res.requesterDept;
-        userDeptMap = res.userDeptMap;
+    async function loadData() {
+      try {
+        // 1. ดึงโควต้าจากตาราง config
+        const { data: configData } = await supabase.from('config').select('*').eq('id', 1).single();
+        if(configData) {
+            dailyLimit = { M: configData.quota_m, Q: configData.quota_q, T: configData.quota_t };
+        } else {
+            dailyLimit = { M: 7, Q: 0, T: 0 };
+        }
 
-        if(currentUser && (currentUser.role === 'admin' || currentUser.role === 'assistant')) {
+        // 2. ดึงข้อมูลแผนกของผู้ใช้ทั้งหมด (เพื่อคำนวณโควต้า)
+        const { data: usersData } = await supabase.from('users').select('username, dept');
+        userDeptMap = {};
+        if(usersData) {
+            usersData.forEach(u => { userDeptMap[u.username] = u.dept || 'M'; });
+        }
+        // กำหนดแผนกของตัวเอง (ดึงจาก LocalStorage หรือฐานข้อมูล)
+        myDept = currentUser ? (currentUser.dept || userDeptMap[currentUser.username] || 'M') : 'M';
+
+        // 3. ดึงประวัติการลาทั้งหมด
+        const { data: leavesData } = await supabase.from('leaves').select('*');
+        allLeaves = (leavesData || []).map(l => ({
+           id: l.id,
+           username: l.username,
+           name: l.name,
+           date: l.leave_date,
+           type: l.leave_type,
+           note: l.note,
+           image: l.image_url,
+           status: l.status,
+           approver: l.approver
+        }));
+
+        // 4. จัดการหน้าจอ Admin (โชว์โควต้าและตั๋วพิเศษ)
+        if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'assistant')) {
            if(document.getElementById('quotaM')) document.getElementById('quotaM').value = dailyLimit.M || 0;
            if(document.getElementById('quotaQ')) document.getElementById('quotaQ').value = dailyLimit.Q || 0;
            if(document.getElementById('quotaT')) document.getElementById('quotaT').value = dailyLimit.T || 0;
-           
+
+           const { count } = await supabase.from('special_quota').select('*', { count: 'exact', head: true }).eq('status', 'Pending');
            let sqBtn = document.getElementById('btnAdminSQ');
            if (sqBtn) {
-               if (res.pendingSQCount > 0) {
-                   sqBtn.innerHTML = '<i class="fas fa-star"></i> อนุมัติพิเศษ <span class="badge bg-danger ms-1">' + res.pendingSQCount + '</span>';
+               if (count > 0) {
+                   sqBtn.innerHTML = '<i class="fas fa-star"></i> อนุมัติพิเศษ <span class="badge bg-danger ms-1">' + count + '</span>';
                    sqBtn.classList.remove('btn-light', 'text-warning');
                    sqBtn.classList.add('btn-danger', 'text-white');
                } else {
@@ -594,23 +621,17 @@
                }
            }
         }
+
+        // วาดปฏิทินใหม่
         renderCalendar();
         if (currentViewDate) {
            const modalEl = document.getElementById('detailModal');
            if (modalEl && modalEl.classList.contains('show')) { viewDay(currentViewDate); }
         }
-      }).catch(err => {
+      } catch (err) {
         Swal.fire('ข้อผิดพลาด', 'โหลดข้อมูลปฏิทินไม่สำเร็จ: ' + err.message, 'error');
-      });
+      }
     }
-
-    let isFirebaseInit = true;
-    db.ref('Leaves').on('value', function(snapshot) {
-        if (isFirebaseInit) { isFirebaseInit = false; return; }
-        if (isSubmitting) return; 
-        setTimeout(function() { loadData(); }, 1500);
-    });
-
     function changeMonth(n) { currentMonth.setMonth(currentMonth.getMonth() + n); renderCalendar(); }
 
     function renderCalendar() {
