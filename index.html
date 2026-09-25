@@ -831,96 +831,98 @@
     }
 
   async function submitLeaveForm(e) {
-    e.preventDefault();
-    const btn = document.getElementById('btnSubmit'); const txt = btn.innerHTML;
-    const fileInput = document.getElementById('leaveFile');
-    if (fileInput.files.length > 0) { const f = fileInput.files[0]; if (f.size > 3 * 1024 * 1024) { Swal.fire('ไฟล์ใหญ่เกินไป', 'กรุณาอัปโหลดรูปภาพขนาดไม่เกิน 3MB', 'warning'); return; } }
-    
-    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> กำลังอัปโหลดและบันทึก...';
-    
-    let fileData = null, fileName = null, mimeType = null;
-    if (fileInput.files.length > 0) { const f = fileInput.files[0]; fileName = f.name; mimeType = f.type; fileData = (await getBase64(f)).split(',')[1]; }
-    
-    const originalId = document.getElementById('editId').value;
-    const isEditMode = (originalId !== "");
-    const leaveId = isEditMode ? originalId : 'L-' + new Date().getTime();
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmit');
+      const txt = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> กำลังอัปโหลดและบันทึก...';
 
-    const endDateVal = document.getElementById('leaveEndDate').value;
-    const swapDateVal = document.getElementById('swapOriginalDate') ? document.getElementById('swapOriginalDate').value : '';
+      try {
+        const fileInput = document.getElementById('leaveFile');
+        let imageUrl = '';
 
-    const fd = { 
-        id: leaveId, 
-        isEdit: isEditMode, 
-        date: document.getElementById('leaveDate').value, 
-        endDate: endDateVal, 
-        swapDate: swapDateVal, 
-        type: document.getElementById('leaveType').value, 
-        note: document.getElementById('leaveNote').value, 
-        fileData: fileData, 
-        fileName: fileName, 
-        mimeType: mimeType 
-    };
-
-    let datesToProcess = [fd.date];
-    if (!isEditMode && fd.type === 'ลาป่วย' && fd.endDate && fd.endDate > fd.date) {
-        let curr = new Date(fd.date);
-        let end = new Date(fd.endDate);
-        datesToProcess = [];
-        while(curr <= end) {
-            let yyyy = curr.getFullYear();
-            let mm = String(curr.getMonth() + 1).padStart(2, '0');
-            let dd = String(curr.getDate()).padStart(2, '0');
-            datesToProcess.push(`${yyyy}-${mm}-${dd}`);
-            curr.setDate(curr.getDate() + 1);
-        }
-    }
-
-    isSubmitting = true; 
-
-    callAPI('submitLeave', { form: fd, user: currentUser }).then(res => {
-        btn.disabled = false; btn.innerHTML = txt;
-        isSubmitting = false; 
-
-        if(res.status === 'success') {
-            function finishSubmitAndRefresh() {
-                const modalInst = bootstrap.Modal.getInstance(document.getElementById('leaveModal'));
-                if(modalInst) modalInst.hide();
-                Swal.fire({ icon: 'success', title: 'สำเร็จ', text: 'บันทึกข้อมูลเรียบร้อย', timer: 1500, showConfirmButton: false });
-                loadData();
-            }
-
-            try {
-                let fbPromises = datesToProcess.map((d, idx) => {
-                    let loopLeaveId = (datesToProcess.length > 1) ? leaveId + '-' + idx : leaveId;
-                    let fbData = {
-                        id: loopLeaveId, username: currentUser.username, name: currentUser.name, date: d, type: fd.type, note: fd.note || '-',
-                        timestamp: new Date().toISOString(), status: fd.type === 'วันหยุดประจำสัปดาห์' ? 'Approved' : 'Pending',
-                        approver: fd.type === 'วันหยุดประจำสัปดาห์' ? 'System-Auto' : ''
-                    };
-                    return db.ref('Leaves/' + loopLeaveId).set(fbData);
-                });
+        // 1. อัปโหลดรูปภาพไป Supabase (ถ้ามีการเลือกไฟล์ใหม่)
+        if (fileInput && fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${currentUser.username}_${Date.now()}.${fileExt}`;
+            
+            const { data: uploadData, error: uploadError } = await supabaseClient
+                .storage
+                .from('leave_images')
+                .upload(fileName, file);
                 
-                Promise.all(fbPromises)
-                    .then(() => { finishSubmitAndRefresh(); })
-                    .catch((err) => { 
-                        console.log("Firebase Error (Ignored):", err); 
-                        finishSubmitAndRefresh(); 
-                    });
-            } catch(e) {
-                finishSubmitAndRefresh();
-            }
-        } else {
-            Swal.fire('แจ้งเตือนระบบ', res.message, 'warning');
+            if (uploadError) throw uploadError;
+            
+            const { data: publicUrlData } = supabaseClient
+                .storage
+                .from('leave_images')
+                .getPublicUrl(fileName);
+                
+            imageUrl = publicUrlData.publicUrl;
         }
-    }).catch(error => {
-        btn.disabled = false; btn.innerHTML = txt;
-        isSubmitting = false; 
-        Swal.fire('ผิดพลาด', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้: ' + error.message, 'error');
-    });
-  }
-    
-    function getBase64(file) { return new Promise(function(r, j) { const rd = new FileReader(); rd.readAsDataURL(file); rd.onload = function() { r(rd.result); }; rd.onerror = function(e) { j(e); }; }); }
 
+        // 2. ตรวจสอบว่าเป็นการ "แก้ไข" หรือ "สร้างใหม่"
+        const originalId = document.getElementById('editId') ? document.getElementById('editId').value : "";
+        const isEditMode = (originalId !== "");
+        const leaveId = isEditMode ? originalId : 'L-' + new Date().getTime();
+        
+        // ดึงข้อมูลจากฟอร์ม
+        const leaveDate = document.getElementById('leaveDate').value;
+        const leaveType = document.getElementById('leaveType').value;
+        const note = document.getElementById('leaveNote') ? document.getElementById('leaveNote').value : "";
+
+        // เตรียมข้อมูลส่งเข้าฐานข้อมูล
+        const payload = {
+            id: leaveId,
+            username: currentUser.username,
+            name: currentUser.name,
+            leave_date: leaveDate,
+            leave_type: leaveType,
+            note: note,
+            status: 'Pending'
+        };
+        
+        // ถ้าอัปโหลดรูปใหม่ ให้ส่งลิงก์รูปไปด้วย
+        if (imageUrl) {
+            payload.image_url = imageUrl;
+        }
+
+        let dbError;
+        if (isEditMode) {
+             // อัปเดตข้อมูลเดิม
+             const { error } = await supabaseClient.from('leaves').update(payload).eq('id', leaveId);
+             dbError = error;
+        } else {
+             // บันทึกข้อมูลใหม่
+             const { error } = await supabaseClient.from('leaves').insert([payload]);
+             dbError = error;
+        }
+
+        if (dbError) throw dbError;
+
+        Swal.fire('สำเร็จ', 'บันทึกข้อมูลการลาเรียบร้อย', 'success');
+        
+        // ล้างข้อมูลในฟอร์ม ปิดหน้าต่าง และรีเฟรชปฏิทิน
+        const formEl = document.getElementById('leaveForm') || e.target;
+        formEl.reset();
+        if(document.getElementById('editId')) document.getElementById('editId').value = "";
+        
+        const modalEl = document.getElementById('leaveModal');
+        if (modalEl) {
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if(modal) modal.hide();
+        }
+        
+        loadData();
+
+      } catch (err) {
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = txt;
+      }
+    }
     function saveQuota() { 
        if(!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'assistant')) return; 
        let qM = document.getElementById('quotaM').value;
