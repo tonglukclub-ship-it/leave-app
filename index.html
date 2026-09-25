@@ -176,6 +176,10 @@
   <!-- Firebase สำหรับแจ้งเตือนแบบ Realtime -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <!-- Supabase & Crypto (สำหรับเข้ารหัสผ่านแบบเดียวกับ Google Apps Script) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 </head>
 <body>
 
@@ -424,8 +428,15 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   
   <script>
-    // ⚠️ นำ URL API ของ Web App ที่ได้ใหม่มาใส่ตรงนี้
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyoQiK2SVZkbCedssBEQWhd_UnT67JBXW4b7L8m1w8NFefxc1zMQuHlON0p3reORIT0yQ/exec";
+    // ตั้งค่าการเชื่อมต่อ Supabase
+    const SUPABASE_URL = "https://vyrzjufrkkihzcebfasi.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_Rt5A7MrALN-6HaSz4yHg-Q_ExDFCJ1X";
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ฟังก์ชันเข้ารหัสผ่านให้ตรงกับระบบเก่า
+    function hashPassword(rawPassword) {
+      return CryptoJS.SHA256(rawPassword.toString()).toString(CryptoJS.enc.Hex);
+    }
     
     // ฟังก์ชันเชื่อมต่อกับ API หลังบ้าน
     async function callAPI(action, payload = {}) {
@@ -508,7 +519,7 @@
       loadData();
     }
 
-    function handleLogin(e) {
+    async function handleLogin(e) {
       e.preventDefault();
       const u = document.getElementById('username').value.trim();
       const p = document.getElementById('password').value.trim();
@@ -517,17 +528,28 @@
       btn.disabled = true; 
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังตรวจสอบ...';
       
-      callAPI('loginUser', { username: u, password: p }).then(res => {
+      try {
+        const hashedPass = hashPassword(p);
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('username', u)
+          .eq('password_hash', hashedPass)
+          .single();
+
         btn.disabled = false; btn.innerText = txt;
-        if(res.status === 'success'){ 
-            currentUser = res; 
-            localStorage.setItem('leaveAppUser', JSON.stringify(res)); 
-            initializeUI(currentUser); 
-        } else { Swal.fire('ข้อมูลไม่ถูกต้อง', res.message, 'error'); }
-      }).catch(err => {
+
+        if (data) {
+            currentUser = { username: data.username, name: data.name, role: data.role, dept: data.dept };
+            localStorage.setItem('leaveAppUser', JSON.stringify(currentUser)); 
+            initializeUI(currentUser);
+        } else {
+            Swal.fire('ข้อมูลไม่ถูกต้อง', 'ไอดีหรือรหัสผ่านผิด', 'error');
+        }
+      } catch (err) {
         btn.disabled = false; btn.innerText = txt;
-        Swal.fire('ข้อผิดพลาดระบบ', err.message, 'error');
-      });
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเชื่อมต่อฐานข้อมูลได้', 'error');
+      }
     }
     
     function logout() {
