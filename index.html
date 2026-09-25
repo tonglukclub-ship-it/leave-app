@@ -936,34 +936,56 @@
        });
     }
     
-    function approveItem(id) { 
-       callAPI('approveLeave', { id: id, adminName: currentUser.name }).then(res => {
+    async function approveItem(id) { 
+       try {
+           // อัปเดตสถานะเป็น Approved และใส่ชื่อผู้อนุมัติ
+           const { error } = await supabaseClient
+               .from('leaves')
+               .update({ status: 'Approved', approver: currentUser.name })
+               .eq('id', id);
+
+           if (error) throw error;
+
            loadData(); 
-           Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, timerProgressBar: true }).fire({ icon: 'success', title: 'อนุมัติเรียบร้อย' }); 
-       }).catch(err => {
-           Swal.fire('ข้อผิดพลาด', err.message, 'error'); 
-       });
+           Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, timerProgressBar: true })
+               .fire({ icon: 'success', title: 'อนุมัติเรียบร้อย' }); 
+       } catch (err) {
+           Swal.fire('ข้อผิดพลาด', 'ไม่สามารถอนุมัติได้: ' + err.message, 'error'); 
+       }
     }
 
-    function delLeave(id) { 
-       const item = allLeaves.find(function(l) { return l.id === id; }); const targetName = item ? item.name : 'รายการนี้'; 
-       Swal.fire({ title: 'ยืนยันการลบ?', text: 'ต้องการลบรายการลาของ "' + targetName + '" ใช่หรือไม่?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'ใช่, ลบเลย', cancelButtonText: 'ยกเลิก'
-       }).then(function(r) { 
+    async function delLeave(id) { 
+       const item = allLeaves.find(function(l) { return l.id === id; }); 
+       const targetName = item ? item.name : 'รายการนี้'; 
+       
+       Swal.fire({ 
+           title: 'ยืนยันการลบ?', 
+           text: 'ต้องการลบรายการลาของ "' + targetName + '" ใช่หรือไม่?', 
+           icon: 'warning', 
+           showCancelButton: true, 
+           confirmButtonColor: '#d33', 
+           confirmButtonText: 'ใช่, ลบเลย', 
+           cancelButtonText: 'ยกเลิก'
+       }).then(async function(r) { 
            if (r.isConfirmed) { 
-               callAPI('deleteLeave', { id: id, user: currentUser }).then(res => {
-                   if(res.status==='success') { 
-                       loadData(); 
-                       Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, timerProgressBar: true }).fire({ icon: 'success', title: 'ลบเรียบร้อย' }); 
-                   } else { 
-                       Swal.fire('ลบไม่ได้', res.message, 'error'); 
-                   } 
-               }).catch(err => {
-                   Swal.fire('ข้อผิดพลาด', err.message, 'error'); 
-               });
+               try {
+                   // ลบข้อมูลออกจากฐานข้อมูล
+                   const { error } = await supabaseClient
+                       .from('leaves')
+                       .delete()
+                       .eq('id', id);
+                       
+                   if (error) throw error;
+
+                   loadData(); 
+                   Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, timerProgressBar: true })
+                       .fire({ icon: 'success', title: 'ลบเรียบร้อย' }); 
+               } catch (err) {
+                   Swal.fire('ข้อผิดพลาด', 'ไม่สามารถลบได้: ' + err.message, 'error'); 
+               }
            } 
        }); 
     }
-
     function runAutoHoliday() {
       Swal.fire({ title: 'กำลังโหลดข้อมูล...', didOpen: function() { Swal.showLoading(); } });
       callAPI('getAllUsers', { requestUsername: currentUser.username }).then(res => {
