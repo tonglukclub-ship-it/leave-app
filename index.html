@@ -765,25 +765,30 @@
        setTimeout(function() { new bootstrap.Modal(document.getElementById('leaveModal')).show(); }, 400);
     }
 
+    // ฟังก์ชันสั่งยิงแจ้งเตือน
+    async function sendNotify(msg, imageUrl = null) {
+        try {
+            await fetch('/api/notify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg, image: imageUrl })
+            });
+        } catch (error) { console.error('Notify Error:', error); }
+    }
+
+    // ฟังก์ชันบันทึกการลา (อัปเดตแจ้งเตือน)
     async function submitLeaveForm(e) {
       e.preventDefault();
-      const btn = document.getElementById('btnSubmit');
-      const txt = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> กำลังอัปโหลดและบันทึก...';
-
+      const btn = document.getElementById('btnSubmit'); const txt = btn.innerHTML;
+      btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> กำลังอัปโหลดและบันทึก...';
       try {
         const fileInput = document.getElementById('leaveFile');
         let imageUrl = '';
-
         if (fileInput && fileInput.files.length > 0) {
-            const file = fileInput.files[0];
-            const fileExt = file.name.split('.').pop();
+            const file = fileInput.files[0]; const fileExt = file.name.split('.').pop();
             const fileName = `${currentUser.username}_${Date.now()}.${fileExt}`;
-            
             const { error: uploadError } = await supabaseClient.storage.from('leave_images').upload(fileName, file);
             if (uploadError) throw uploadError;
-            
             const { data: publicUrlData } = supabaseClient.storage.from('leave_images').getPublicUrl(fileName);
             imageUrl = publicUrlData.publicUrl;
         }
@@ -791,14 +796,11 @@
         const originalId = document.getElementById('editId') ? document.getElementById('editId').value : "";
         const isEditMode = (originalId !== "");
         const leaveId = isEditMode ? originalId : 'L-' + Date.now().toString();
-        
         const leaveDate = document.getElementById('leaveDate').value;
         const leaveType = document.getElementById('leaveType').value;
         const note = document.getElementById('leaveNote') ? document.getElementById('leaveNote').value : "";
 
-        const payload = {
-            id: leaveId, username: currentUser.username, name: currentUser.name, leave_date: leaveDate, leave_type: leaveType, note: note, status: 'Pending'
-        };
+        const payload = { id: leaveId, username: currentUser.username, name: currentUser.name, leave_date: leaveDate, leave_type: leaveType, note: note, status: 'Pending' };
         if (imageUrl) payload.image_url = imageUrl;
 
         let dbError;
@@ -809,19 +811,21 @@
              const { error } = await supabaseClient.from('leaves').insert([payload]);
              dbError = error;
         }
-
         if (dbError) throw dbError;
+
         Swal.fire('สำเร็จ', 'บันทึกข้อมูลการลาเรียบร้อย', 'success');
         
+        // ส่งแจ้งเตือน LINE & Telegram
+        let notifyMsg = `🔔 คำขอลาหยุดใหม่\nผู้ลา: ${currentUser.name}\nวันที่: ${leaveDate.split('-').reverse().join('/')}\nประเภท: ${leaveType}\nเหตุผล: ${note || '-'}`;
+        sendNotify(notifyMsg, imageUrl);
+
         const formEl = document.getElementById('leaveForm') || e.target; formEl.reset();
         if(document.getElementById('editId')) document.getElementById('editId').value = "";
         const modalEl = document.getElementById('leaveModal'); if (modalEl) bootstrap.Modal.getInstance(modalEl).hide();
         loadData();
-
       } catch (err) { Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + err.message, 'error'); } 
       finally { btn.disabled = false; btn.innerHTML = txt; }
     }
-
     async function saveQuota() { 
        if(!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'assistant')) return; 
        let qM = document.getElementById('quotaM').value; let qQ = document.getElementById('quotaQ').value; let qT = document.getElementById('quotaT').value;
@@ -832,10 +836,18 @@
        } catch (err) { Swal.fire('ข้อผิดพลาด', err.message, 'error'); }
     }
     
+    // ฟังก์ชันอนุมัติ (อัปเดตแจ้งเตือน)
     async function approveItem(id) { 
        try {
            const { error } = await supabaseClient.from('leaves').update({ status: 'Approved', approver: currentUser.name }).eq('id', id);
            if (error) throw error;
+           
+           const item = allLeaves.find(l => l.id === id);
+           if(item) {
+               let notifyMsg = `✅ อนุมัติการลา\nผู้ลา: ${item.name}\nวันที่: ${item.date.split('-').reverse().join('/')}\nประเภท: ${item.type}\nผู้อนุมัติ: ${currentUser.name}`;
+               sendNotify(notifyMsg);
+           }
+           
            loadData(); Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 }).fire({ icon: 'success', title: 'อนุมัติเรียบร้อย' }); 
        } catch (err) { Swal.fire('ข้อผิดพลาด', 'ไม่สามารถอนุมัติได้: ' + err.message, 'error'); }
     }
