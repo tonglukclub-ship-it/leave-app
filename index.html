@@ -887,20 +887,26 @@
                     for(let d=1; d<=daysInMonth; d++) {
                         let dateObj = new Date(result.value.y, result.value.m-1, d);
                         if(dateObj.getDay() == u.day_off) {
+                            // สร้าง ID ที่ไม่ซ้ำกันแน่นอน
+                            let uniqueId = 'L-Auto-' + Date.now() + '-' + u.username + '-' + d;
                             payload.push({ 
-                                id: 'L-' + Date.now() + Math.floor(Math.random()*1000), 
+                                id: uniqueId, 
                                 username: u.username, 
                                 name: u.name, 
                                 leave_date: `${result.value.y}-${String(result.value.m).padStart(2,'0')}-${String(d).padStart(2,'0')}`, 
                                 leave_type: 'วันหยุดประจำสัปดาห์', 
                                 status: 'Approved', 
                                 approver: 'SYSTEM',
-                                notified: 'System-Batch' // <--- เพิ่มตัวนี้ให้แล้วครับ
+                                notified: 'System-Batch' 
                             });
                         }
                     }
                 }
-                if(payload.length > 0) await supabaseClient.from('leaves').insert(payload);
+                if(payload.length > 0) {
+                    // เพิ่มตัวจับ Error ถ้าบันทึกไม่เข้า
+                    const { error } = await supabaseClient.from('leaves').insert(payload);
+                    if (error) throw error; 
+                }
                 Swal.fire('เรียบร้อย', 'สร้างวันหยุดอัตโนมัติสำเร็จ', 'success').then(() => { loadData(); }); 
             } catch(e) { Swal.fire('ผิดพลาด', e.message, 'error'); }
         } 
