@@ -887,12 +887,21 @@
                     for(let d=1; d<=daysInMonth; d++) {
                         let dateObj = new Date(result.value.y, result.value.m-1, d);
                         if(dateObj.getDay() == u.day_off) {
-                            payload.push({ id: 'L-' + Date.now() + Math.floor(Math.random()*1000), username: u.username, name: u.name, leave_date: `${result.value.y}-${String(result.value.m).padStart(2,'0')}-${String(d).padStart(2,'0')}`, leave_type: 'วันหยุดประจำสัปดาห์', status: 'Approved', approver: 'SYSTEM' });
+                            payload.push({ 
+                                id: 'L-' + Date.now() + Math.floor(Math.random()*1000), 
+                                username: u.username, 
+                                name: u.name, 
+                                leave_date: `${result.value.y}-${String(result.value.m).padStart(2,'0')}-${String(d).padStart(2,'0')}`, 
+                                leave_type: 'วันหยุดประจำสัปดาห์', 
+                                status: 'Approved', 
+                                approver: 'SYSTEM',
+                                notified: 'System-Batch' // <--- เพิ่มตัวนี้ให้แล้วครับ
+                            });
                         }
                     }
                 }
                 if(payload.length > 0) await supabaseClient.from('leaves').insert(payload);
-                Swal.fire('เรียบร้อย', 'สร้างวันหยุดอัตโนมัติสำเร็จ', 'success'); loadData(); 
+                Swal.fire('เรียบร้อย', 'สร้างวันหยุดอัตโนมัติสำเร็จ', 'success').then(() => { loadData(); }); 
             } catch(e) { Swal.fire('ผิดพลาด', e.message, 'error'); }
         } 
         else if (result.isDenied) {
@@ -903,7 +912,7 @@
                         let query = supabaseClient.from('leaves').delete().eq('leave_type', 'วันหยุดประจำสัปดาห์').like('leave_date', `${result.value.y}-${String(result.value.m).padStart(2,'0')}-%`);
                         if(result.value.target !== 'ALL') query = query.eq('username', result.value.target);
                         await query;
-                        Swal.fire('ลบแล้ว', 'ลบวันหยุดเดือนนี้เรียบร้อย', 'success'); loadData();
+                        Swal.fire('ลบแล้ว', 'ลบวันหยุดเดือนนี้เรียบร้อย', 'success').then(() => { loadData(); });
                     } catch(e) { Swal.fire('ผิดพลาด', e.message, 'error'); }
                 } 
             });
