@@ -472,6 +472,12 @@
         btn.disabled = false; btn.innerText = txt;
 
         if (data) {
+            // ด่านที่ 3: เช็คว่าเป็นพนักงานเก่าที่ถูกระงับสิทธิ์หรือไม่
+            if (data.is_active === false) {
+                Swal.fire('ระงับการใช้งาน', 'รหัสผู้ใช้งานนี้ถูกระงับหรือพ้นสภาพพนักงานแล้ว', 'error');
+                return;
+            }
+            
             currentUser = { username: data.username, name: data.name, role: data.role, dept: data.dept };
             localStorage.setItem('leaveAppUser', JSON.stringify(currentUser)); 
             initializeUI(currentUser);
@@ -1023,8 +1029,12 @@
         tbody.innerHTML = '';
         globalUsersList.forEach(u => {
           let roleBadge = u.role === 'admin' ? '<span class="badge bg-danger shadow-sm">Admin</span>' : (u.role === 'assistant' ? '<span class="badge bg-warning text-dark shadow-sm">ผู้ช่วย</span>' : '<span class="badge bg-secondary shadow-sm">สมาชิก</span>');
+          
+          // เช็คเพิ่มว่าถ้าระงับสิทธิ์แล้ว (is_active เป็น false) ให้โชว์คำว่า (ระงับ) หลังชื่อ
+          let inactiveTag = (u.is_active === false) ? ' <span class="badge bg-danger ms-1" style="font-size:0.6rem;">ระงับสิทธิ์</span>' : '';
+
           const days = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์']; let dayOffText = (u.day_off !== "" && u.day_off != null) ? days[u.day_off] : '-';
-          let row = `<tr><td class="fw-bold text-secondary">${u.username}</td><td class="text-dark fw-bold">${u.name}</td><td>${roleBadge}</td><td><span class="badge bg-info text-dark shadow-sm">แผนก ${u.dept||'M'}</span></td><td>${dayOffText}</td><td><button class="btn btn-outline-primary btn-sm shadow-sm py-0" onclick="openEditUserForm('${u.username}', '${u.name}', '${u.role}', '${u.day_off}', '${u.dept}')"><i class="fas fa-edit"></i></button><button class="btn btn-outline-warning btn-sm shadow-sm py-0 ms-1" onclick="resetUserPassword('${u.username}')"><i class="fas fa-key"></i></button><button class="btn btn-outline-danger btn-sm shadow-sm py-0 ms-1" onclick="deleteUser('${u.username}')"><i class="fas fa-trash"></i></button></td></tr>`;
+          let row = `<tr><td class="fw-bold text-secondary">${u.username}</td><td class="text-dark fw-bold">${u.name}${inactiveTag}</td><td>${roleBadge}</td><td><span class="badge bg-info text-dark shadow-sm">แผนก ${u.dept||'M'}</span></td><td>${dayOffText}</td><td><button class="btn btn-outline-primary btn-sm shadow-sm py-0" onclick="openEditUserForm('${u.username}', '${u.name}', '${u.role}', '${u.day_off}', '${u.dept}')"><i class="fas fa-edit"></i></button><button class="btn btn-outline-warning btn-sm shadow-sm py-0 ms-1" onclick="resetUserPassword('${u.username}')"><i class="fas fa-key"></i></button><button class="btn btn-outline-danger btn-sm shadow-sm py-0 ms-1" onclick="deleteUser('${u.username}')"><i class="fas fa-ban"></i></button></td></tr>`;
           tbody.innerHTML += row;
         });
       } else { tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger fw-bold py-3">ไม่มีข้อมูลสมาชิก</td></tr>'; }
@@ -1085,14 +1095,25 @@
       });
     }
 
+    // แก้ไขฟังก์ชันนี้: เปลี่ยนจากการ Delete เป็นการ Update is_active
     function deleteUser(target) {
-      Swal.fire({ title: 'ลบสมาชิก ' + target + '?', text: "ข้อมูลนี้จะไม่สามารถกู้คืนได้", icon: 'warning', showCancelButton: true, confirmButtonText: 'ยืนยันการลบ', confirmButtonColor: '#d33' 
+      Swal.fire({ 
+        title: 'ระงับสิทธิ์ผู้ใช้ ' + target + '?', 
+        text: "ผู้ใช้นี้จะไม่สามารถล็อกอินเข้าแอปได้อีก แต่ประวัติการลาเก่าๆ จะยังอยู่ครบ", 
+        icon: 'warning', 
+        showCancelButton: true, 
+        confirmButtonText: 'ยืนยันการระงับสิทธิ์', 
+        confirmButtonColor: '#d33',
+        cancelButtonText: 'ยกเลิก' 
       }).then(async function(r) { 
           if (r.isConfirmed) { 
-              Swal.fire({title: 'กำลังลบ...', didOpen:()=>Swal.showLoading()}); 
+              Swal.fire({title: 'กำลังดำเนินการ...', didOpen:()=>Swal.showLoading()}); 
               try {
-                  await supabaseClient.from('users').delete().eq('username', target);
-                  Swal.fire('ลบเรียบร้อย', 'ลบผู้ใช้สำเร็จ', 'success'); loadData();
+                  // เปลี่ยนจาก delete() เป็นการอัปเดตสถานะ is_active ให้เป็น false
+                  await supabaseClient.from('users').update({ is_active: false }).eq('username', target);
+                  Swal.fire('เรียบร้อย', 'ระงับสิทธิ์ผู้ใช้งานสำเร็จ', 'success'); 
+                  loadData(); // รีเฟรชข้อมูลใหม่
+                  setTimeout(() => openUserManageModal(), 1000); // เปิดหน้าต่างสมาชิกขึ้นมาอีกครั้ง
               } catch(e) { Swal.fire('ข้อผิดพลาด', e.message, 'error'); }
           } 
       });
