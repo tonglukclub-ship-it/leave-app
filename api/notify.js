@@ -2,10 +2,11 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
   const { message, image } = req.body;
-  const LINE_TOKEN = 'A51V80ujOdQPw9vsYUfJQCq5KlN45Bcm89XNLyLjMxaUgu1nXysW2+SUZy7h7T5DdDyL4M93/7SoXNZ+EWT2eHVH+ZsOwVUcim/ATRPoInIXROFc8fWoswZ+EYr8+pb5/UqCfGyll6W4KUyTjrVd5gdB04t89/1O/w1cDnyilFU=';
-  const LINE_GROUP_ID = 'C273089bc44ccc3a09dba0fae34d79d7e';
-  const TELEGRAM_TOKEN = '8462219030:AAGFEcUJm9DaBOnc7Syn6EgxTF-ZJuAAEGI';
-  const TELEGRAM_CHAT_ID = '-5005614992';
+  // เปลี่ยนจากพิมพ์ตรงๆ เป็นการดึงค่าจาก Vercel Environment Variables
+const LINE_TOKEN = process.env.LINE_TOKEN;
+const LINE_GROUP_ID = process.env.LINE_GROUP_ID;
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
   try {
     // 1. เตรียมส่ง LINE
