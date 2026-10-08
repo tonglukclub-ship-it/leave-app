@@ -772,14 +772,36 @@
     }
 
     // ฟังก์ชันสั่งยิงแจ้งเตือน
+    // ฟังก์ชันสั่งยิงแจ้งเตือน (อัปเดตใหม่ บังคับยิงเข้า Vercel และดักจับ Error)
     async function sendNotify(msg, imageUrl = null) {
         try {
-            await fetch('/api/notify', {
+            console.log("กำลังส่งแจ้งเตือนไปที่ Vercel...");
+            
+            // ใส่ URL เต็มของ Vercel โปรเจกต์คุณ เพื่อให้ยิงไม่พลาดเป้า
+            const response = await fetch('https://leave-app-xi.vercel.app/api/notify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: msg, image: imageUrl })
             });
-        } catch (error) { console.error('Notify Error:', error); }
+
+            if (!response.ok) {
+                throw new Error(`Server ตอบกลับมาว่า: ${response.status}`);
+            }
+            
+            console.log("ส่งแจ้งเตือนสำเร็จ!");
+            
+        } catch (error) { 
+            console.error('Notify Error:', error); 
+            // ถ้าส่งไม่ผ่าน จะเด้งป๊อปอัปฟ้องหน้าจอเลยว่าติดอะไร
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'warning',
+                title: 'บอทแจ้งเตือนขัดข้อง: ' + error.message,
+                showConfirmButton: false,
+                timer: 4000
+            });
+        }
     }
 
     // ฟังก์ชันบันทึกการลา (อัปเดตแจ้งเตือน)
