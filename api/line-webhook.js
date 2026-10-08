@@ -25,7 +25,6 @@ export default async function handler(req, res) {
           // หาวันที่ปัจจุบัน (เวลาไทย)
           const today = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Bangkok"}));
           const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-          const displayDate = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
           
           // ดึงข้อมูลจาก Supabase เฉพาะของ "วันนี้" และที่สถานะ "Approved"
           const supaRes = await fetch(`${SUPABASE_URL}/rest/v1/leaves?leave_date=eq.${dateStr}&status=eq.Approved`, {
@@ -33,19 +32,49 @@ export default async function handler(req, res) {
           });
           const leaves = await supaRes.json();
           
-          // สร้างข้อความสรุป
-          let replyText = `📅 สรุปการลางานวันนี้ (${displayDate})\n\n`;
-          if (leaves && leaves.length > 0) {
-            leaves.forEach((l, index) => {
-              let note = l.note ? ` (${l.note})` : '';
-              replyText += `${index + 1}. ${l.name} - ${l.leave_type}${note}\n`;
-            });
-            replyText += `\nรวมผู้ลางาน: ${leaves.length} ท่าน`;
+          let lineMessages = [];
+
+          if (!leaves || leaves.length === 0) {
+            lineMessages.push({ type: 'text', text: '✅ วันนี้ไม่มีพนักงานลางานครับ (มาครบ!)' });
           } else {
-            replyText += `✅ วันนี้ไม่มีพนักงานลางานครับ (มาครบ!)`;
+            // ฟังก์ชันจัดฟอร์แมตข้อความตามรูปต้นแบบ
+            const formatLeaveMsg = (l) => {
+              // จัดรูปแบบวันที่ลา YYYY-MM-DD เป็น DD/MM/YYYY
+              const d = l.leave_date.split('-');
+              const leaveDateThai = `${d[2]}/${d[1]}/${d[0]}`;
+              
+              // จัดรูปแบบเวลากดลา (ถ้ามีข้อมูลในระบบ)
+              let submitTime = '-';
+              if (l.created_at) {
+                const c = new Date(l.created_at);
+                const timeStr = c.toLocaleString('en-GB', { 
+                  timeZone: 'Asia/Bangkok', day: '2-digit', month: '2-digit', year: 'numeric', 
+                  hour: '2-digit', minute: '2-digit' 
+                }).replace(',', '');
+                submitTime = `${timeStr} น.`;
+              }
+
+              return `👤 **${l.name} รหัส ${l.username}**\n⏰ กดลา: ${submitTime}\n📅 วันที่ลา: ${leaveDateThai}\n📌 ประเภท: ${l.leave_type}\n📝 เหตุผล: ${l.note || '-'}`;
+            };
+
+            // ลอจิกการส่งบับเบิ้ลแบบแยก
+            if (leaves.length <= 5) {
+              // กรณีไม่เกิน 5 คน: สร้างบับเบิ้ลแยกคนละ 1 ข้อความเลย
+              leaves.forEach(l => {
+                lineMessages.push({ type: 'text', text: formatLeaveMsg(l) });
+              });
+            } else {
+              // กรณีเกิน 5 คน: เอาแค่ 4 คนแรกมาสร้างบับเบิ้ล
+              for (let i = 0; i < 4; i++) {
+                lineMessages.push({ type: 'text', text: formatLeaveMsg(leaves[i]) });
+              }
+              // บับเบิ้ลที่ 5 ทำหน้าที่แจ้งเตือนคนที่เหลือตามที่คุณ Tongluk ระบุ
+              const remaining = leaves.length - 4;
+              lineMessages.push({ type: 'text', text: `🔔 มีผู้ลางานอีก ${remaining} ท่านที่ยังไม่แสดงผล (ตรวจสอบรายชื่อทั้งหมดได้ที่ระบบเว็บแอปครับ)` });
+            }
           }
 
-          // ยิง API ตอบกลับไปที่แชท LINE ทันที
+          // ยิง API ตอบกลับไปที่แชท LINE
           await fetch('https://api.line.me/v2/bot/message/reply', {
             method: 'POST',
             headers: {
@@ -54,7 +83,7 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
               replyToken: event.replyToken,
-              messages: [{ type: 'text', text: replyText }]
+              messages: lineMessages
             })
           });
         }
